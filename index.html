@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Research Services Cost Transparency Assessment</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-mark"></span>
+      <span class="brand-text">Research Services Collaborative Readiness Assessment</span>
+    </div>
+    <nav class="topnav" id="topnav">
+      <button class="nav-link active" data-view="home">Home</button>
+      <button class="nav-link" data-view="assessment">Assessment</button>
+      <button class="nav-link" data-view="results">Outcomes</button>
+    </nav>
+  </div>
+</header>
+
+<main id="app">
+
+  <!-- HOME / ROLE PICKER -->
+  <section class="view" id="view-home">
+    <div class="hero">
+      <h1>Is your library, research office, and costing team ready to talk about cost?</h1>
+      <p class="hero-sub">
+        Built on the <strong>Research Information and Data Service Inventory</strong> (Craiglow &amp; LaFlamme, ARL),
+        this assessment asks three audiences the same 22 services, in their own language, then compares the
+        answers to surface where library investments are ready for cost transparency&nbsp;&mdash; and where they
+        should expand.
+      </p>
+    </div>
+
+    <div class="role-grid">
+      <article class="role-card" data-role="library">
+        <div class="role-card-bar" style="background:#0B2545"></div>
+        <h2>Library</h2>
+        <p class="role-card-sub">Library leadership &amp; service managers</p>
+        <p>For each service: do you offer it, can you isolate its cost, and can you show that cost per project or researcher?</p>
+        <button class="btn btn-primary" data-start="library">Start as Library</button>
+      </article>
+      <article class="role-card" data-role="admin">
+        <div class="role-card-bar" style="background:#52733E"></div>
+        <h2>Research Administration</h2>
+        <p class="role-card-sub">Sponsored programs &amp; research administrators</p>
+        <p>For each service: is it valuable to your research strategy, does it support grant compliance, and could you charge a grant for it?</p>
+        <button class="btn btn-primary" data-start="admin">Start as Research Administration</button>
+      </article>
+      <article class="role-card" data-role="costing">
+        <div class="role-card-bar" style="background:#1F87A6"></div>
+        <h2>University Costing</h2>
+        <p class="role-card-sub">Institutional costing &amp; cost accounting teams</p>
+        <p>For each service: do you have a cost center for it, is it already in F&amp;A recovery, and would you move it to direct charging?</p>
+        <button class="btn btn-primary" data-start="costing">Start as University Costing</button>
+      </article>
+    </div>
+
+    <div class="progress-summary" id="progress-summary"></div>
+
+    <div class="share-box">
+      <h3>Combining results across teams</h3>
+      <p>Each stakeholder fills out their section on their own device. Use <strong>Export</strong> to save your
+      answers as a file, and ask the other two teams to send you theirs. <strong>Import</strong> each file to see
+      combined Outcomes.</p>
+      <div class="share-actions">
+        <button class="btn btn-secondary" id="export-btn">Export my answers</button>
+        <label class="btn btn-secondary file-btn">
+          Import answers
+          <input type="file" id="import-input" accept="application/json" hidden>
+        </label>
+        <button class="btn btn-text" id="reset-btn">Clear all local data</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ASSESSMENT -->
+  <section class="view" id="view-assessment" hidden>
+    <div class="assessment-header">
+      <button class="btn btn-text" id="back-home">&larr; Back</button>
+      <div>
+        <h2 id="assessment-role-title">Assessment</h2>
+        <p id="assessment-role-sub"></p>
+      </div>
+      <div class="progress-pill" id="assessment-progress">0 / 22</div>
+    </div>
+    <div id="category-list"></div>
+  </section>
+
+  <!-- RESULTS -->
+  <section class="view" id="view-results" hidden>
+    <div class="results-header">
+      <h2>Outcomes</h2>
+      <p>Outcomes update automatically as more roles complete the assessment or are imported.</p>
+    </div>
+    <div class="results-grid">
+      <div class="outcome-card" id="outcome-transparency">
+        <h3>Most potential to model cost transparency</h3>
+        <p class="outcome-desc">Services the library can already isolate and demonstrate the cost of, where costing teams are open to direct charging.</p>
+        <div class="outcome-body"></div>
+      </div>
+      <div class="outcome-card" id="outcome-expand">
+        <h3>Most valuable to expand or start</h3>
+        <p class="outcome-desc">Services research administrators value most, that the library does not yet fully offer.</p>
+        <div class="outcome-body"></div>
+      </div>
+    </div>
+    <div class="results-detail" id="results-detail"></div>
+  </section>
+
+</main>
+
+<script src="data/inventory.js"></script>
+<script src="data/roles.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

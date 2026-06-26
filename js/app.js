@@ -40,22 +40,32 @@
     results: document.getElementById("view-results")
   };
 
+  const heroHome = document.getElementById("hero-home");
+
   function showView(name) {
     Object.entries(views).forEach(([k, el]) => { el.hidden = k !== name; });
-    document.querySelectorAll(".nav-link").forEach((btn) => {
+    document.querySelectorAll(".tab-link").forEach((btn) => {
       btn.classList.toggle("active", btn.dataset.view === name);
     });
+    heroHome.hidden = name !== "home";
     if (name === "results") renderResults();
     if (name === "home") renderHomeProgress();
     window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
   }
 
   document.getElementById("topnav").addEventListener("click", (e) => {
-    const btn = e.target.closest(".nav-link");
+    const btn = e.target.closest(".tab-link");
     if (btn) showView(btn.dataset.view);
   });
 
   document.getElementById("back-home").addEventListener("click", () => showView("home"));
+
+  document.querySelectorAll("[data-scroll-to]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const target = document.getElementById(btn.dataset.scrollTo);
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
 
   // ---------- HOME ----------
   document.querySelectorAll("[data-start]").forEach((btn) => {
@@ -151,7 +161,7 @@
         optBtn.className = "opt-btn";
         optBtn.textContent = opt.label;
         if (answers[q.key] === opt.value) optBtn.classList.add("selected");
-        optBtn.style.setProperty("--role-color", role.color);
+        optBtn.classList.add(`val-${opt.value}`);
         optBtn.addEventListener("click", () => {
           DATA[roleId][item.id] = DATA[roleId][item.id] || {};
           DATA[roleId][item.id][q.key] = opt.value;
@@ -176,7 +186,7 @@
   }
 
   // ---------- EXPORT / IMPORT ----------
-  document.getElementById("export-btn").addEventListener("click", () => {
+  function exportAnswers() {
     const blob = new Blob([JSON.stringify(DATA, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -184,7 +194,11 @@
     a.download = `research-services-assessment-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
-  });
+  }
+
+  document.getElementById("export-btn").addEventListener("click", exportAnswers);
+  const exportBtnResults = document.getElementById("export-btn-results");
+  if (exportBtnResults) exportBtnResults.addEventListener("click", exportAnswers);
 
   document.getElementById("import-input").addEventListener("change", (e) => {
     const file = e.target.files[0];

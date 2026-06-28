@@ -1,7 +1,6 @@
 // Research Information and Data Service Inventory
 // Source: Craiglow & LaFlamme (ARL), "Research Information and Data Service Inventory"
 const CATEGORIES = [
-  { id: "facilities", name: "Libraries & Data Facilities", color: "#0B2545" },
   { id: "plan", name: "Plan & Design", color: "#52733E" },
   { id: "collect", name: "Collect & Create", color: "#1F87A6" },
   { id: "analyze", name: "Analyze & Collaborate", color: "#0E4F5C" },
@@ -10,13 +9,6 @@ const CATEGORIES = [
 ];
 
 const INVENTORY = [
-  { id: "data-centers", category: "facilities", name: "Data centers",
-    desc: "Facilities providing storage and network connectivity",
-    institutional: true, projectSpecific: false, unallowable: false },
-  { id: "library-buildings", category: "facilities", name: "Library buildings",
-    desc: "Physical spaces housing collections, study spaces, and personnel",
-    institutional: true, projectSpecific: false, unallowable: false },
-
   { id: "discovery-cataloging", category: "plan", name: "Discovery and cataloging systems",
     desc: "Platforms connecting users to available and relevant resources",
     institutional: true, projectSpecific: false, unallowable: false },

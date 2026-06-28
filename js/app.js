@@ -5,6 +5,7 @@
 
   /** @type {{library: object, admin: object, costing: object}} */
   let DATA = loadData();
+  mergeSharedLinkData();
 
   function loadData() {
     try {
@@ -16,6 +17,36 @@
 
   function saveData() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA));
+  }
+
+  // ---------- SHARE LINK (no backend: answers travel inside the URL) ----------
+  function encodeShareData(data) {
+    return btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+  }
+
+  function decodeShareData(str) {
+    return JSON.parse(decodeURIComponent(escape(atob(str))));
+  }
+
+  function buildShareLink() {
+    const encoded = encodeShareData(DATA);
+    const base = window.location.href.split("#")[0];
+    return `${base}#share=${encoded}`;
+  }
+
+  function mergeSharedLinkData() {
+    const hash = window.location.hash || "";
+    if (!hash.startsWith("#share=")) return;
+    try {
+      const incoming = decodeShareData(hash.slice("#share=".length));
+      ROLE_ORDER.forEach((roleId) => {
+        if (incoming[roleId]) {
+          DATA[roleId] = Object.assign({}, DATA[roleId], incoming[roleId]);
+        }
+      });
+      saveData();
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+    } catch (e) { /* ignore bad links */ }
   }
 
   function categoryItems(catId) {
@@ -67,6 +98,10 @@
     });
   });
 
+  document.querySelectorAll("[data-goto]").forEach((btn) => {
+    btn.addEventListener("click", () => showView(btn.dataset.goto));
+  });
+
   // ---------- HOME ----------
   document.querySelectorAll("[data-start]").forEach((btn) => {
     btn.addEventListener("click", () => openAssessment(btn.dataset.start));
@@ -88,10 +123,14 @@
   }
 
   // ---------- ASSESSMENT ----------
+  let currentRoleId = null;
+
   function openAssessment(roleId) {
+    currentRoleId = roleId;
     const role = ROLES[roleId];
-    document.getElementById("assessment-role-title").textContent = `${role.label} assessment`;
+    document.getElementById("assessment-role-title").textContent = `${role.label} Assessment`;
     document.getElementById("assessment-role-sub").textContent = role.subtitle;
+    document.getElementById("share-link-input").value = "";
     renderCategoryList(roleId);
     showView("assessment");
   }
@@ -132,7 +171,17 @@
 
   function renderItemCard(roleId, item) {
     const role = ROLES[roleId];
-    const answers = DATA[roleId][item.id] || {};
+    DATA[roleId][item.id] = DATA[roleId][item.id] || {};
+    const answers = DATA[roleId][item.id];
+
+    // Library-only rule: if the library doesn't offer a service, the cost-tracking
+    // questions for it are meaningless, so they're forced to "No" and locked.
+    const forcedNo = roleId === "library" && answers.offer === 0;
+    if (forcedNo && (answers.isolate !== 0 || answers.demonstrate !== 0)) {
+      answers.isolate = 0;
+      answers.demonstrate = 0;
+      saveData();
+    }
 
     const card = document.createElement("article");
     card.className = "item-card";
@@ -146,8 +195,10 @@
     qWrap.className = "question-wrap";
 
     role.questions.forEach((q) => {
+      const locked = forcedNo && q.key !== "offer";
+
       const qEl = document.createElement("div");
-      qEl.className = "question";
+      qEl.className = "question" + (locked ? " question-locked" : "");
       const qText = document.createElement("p");
       qText.className = "question-text";
       qText.textContent = q.text(item.name.toLowerCase());
@@ -162,17 +213,30 @@
         optBtn.textContent = opt.label;
         if (answers[q.key] === opt.value) optBtn.classList.add("selected");
         optBtn.classList.add(`val-${opt.value}`);
+        if (locked) optBtn.disabled = true;
         optBtn.addEventListener("click", () => {
-          DATA[roleId][item.id] = DATA[roleId][item.id] || {};
-          DATA[roleId][item.id][q.key] = opt.value;
+          answers[q.key] = opt.value;
+          if (roleId === "library" && q.key === "offer") {
+            if (opt.value === 0) {
+              answers.isolate = 0;
+              answers.demonstrate = 0;
+            } else {
+              delete answers.isolate;
+              delete answers.demonstrate;
+            }
+          }
           saveData();
-          optWrap.querySelectorAll(".opt-btn").forEach((b) => b.classList.remove("selected"));
-          optBtn.classList.add("selected");
-          updateAssessmentProgress(roleId);
+          renderCategoryList(roleId);
         });
         optWrap.appendChild(optBtn);
       });
       qEl.appendChild(optWrap);
+      if (locked) {
+        const note = document.createElement("p");
+        note.className = "locked-note";
+        note.textContent = "Automatically set to No — the library does not yet offer this service.";
+        qEl.appendChild(note);
+      }
       qWrap.appendChild(qEl);
     });
 
@@ -184,6 +248,36 @@
     const { answered, total } = roleCompletion(roleId);
     document.getElementById("assessment-progress").textContent = `${answered} / ${total}`;
   }
+
+  // ---------- SHARE LINK UI (assessment "what's next" panel) ----------
+  const shareLinkInput = document.getElementById("share-link-input");
+
+  document.getElementById("gen-link-btn").addEventListener("click", () => {
+    shareLinkInput.value = buildShareLink();
+    shareLinkInput.select();
+  });
+
+  document.getElementById("copy-link-btn").addEventListener("click", async () => {
+    if (!shareLinkInput.value) shareLinkInput.value = buildShareLink();
+    try {
+      await navigator.clipboard.writeText(shareLinkInput.value);
+    } catch (e) {
+      shareLinkInput.select();
+      document.execCommand("copy");
+    }
+  });
+
+  document.getElementById("email-link-btn").addEventListener("click", (e) => {
+    e.preventDefault();
+    const link = shareLinkInput.value || buildShareLink();
+    shareLinkInput.value = link;
+    const subject = encodeURIComponent("Research Services Readiness Assessment — your input needed");
+    const body = encodeURIComponent(
+      `Hi,\n\nWe're working through the Research Services Collaborative Readiness Assessment. ` +
+      `Click this link to load what's been answered so far and add your team's answers:\n\n${link}\n\nThanks!`
+    );
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  });
 
   // ---------- EXPORT / IMPORT ----------
   function exportAnswers() {
@@ -197,8 +291,11 @@
   }
 
   document.getElementById("export-btn").addEventListener("click", exportAnswers);
+
   const exportBtnResults = document.getElementById("export-btn-results");
-  if (exportBtnResults) exportBtnResults.addEventListener("click", exportAnswers);
+  if (exportBtnResults) {
+    exportBtnResults.addEventListener("click", () => window.print());
+  }
 
   document.getElementById("import-input").addEventListener("change", (e) => {
     const file = e.target.files[0];
@@ -243,7 +340,7 @@
   function renderResults() {
     renderTransparencyOutcome();
     renderExpandOutcome();
-    renderDetailTable();
+    renderDetailVisual();
   }
 
   function renderTransparencyOutcome() {
@@ -252,7 +349,7 @@
     const costDone = roleCompletion("costing").answered > 0;
 
     if (!libDone || !costDone) {
-      el.innerHTML = `<p class="empty-note">Needs answers from both <strong>Library</strong> and <strong>University Costing</strong> to calculate. Import their results to continue.</p>`;
+      el.innerHTML = `<p class="empty-note">Needs answers from both <strong>Library</strong> and <strong>University Costing</strong> to calculate.</p>`;
       return;
     }
 
@@ -262,7 +359,7 @@
       if (!lib || !cost) return null;
       if (lib.offer === 0) return null; // not offered yet, can't model transparency on it
       const trackingScore = lib.isolate + lib.demonstrate; // 0-4
-      const appetiteScore = cost.direct + (2 - cost.fa); // already-not-in-FA + wants direct charging, 0-4
+      const appetiteScore = cost.direct + (2 - cost.idc); // not-already-in-IDC-pool + open to direct charging, 0-4
       const total = trackingScore + appetiteScore; // 0-8
       return { item, total, trackingScore, appetiteScore };
     }).filter(Boolean).sort((a, b) => b.total - a.total);
@@ -286,7 +383,7 @@
     const libDone = roleCompletion("library").answered > 0;
 
     if (!adminDone) {
-      el.innerHTML = `<p class="empty-note">Needs answers from <strong>Research Administration</strong> to calculate. Import their results to continue.</p>`;
+      el.innerHTML = `<p class="empty-note">Needs answers from <strong>Research Administration</strong> to calculate.</p>`;
       return;
     }
 
@@ -297,7 +394,7 @@
       const offerLevel = lib ? lib.offer : null;
       if (offerLevel === 2) return null; // already fully offered, not a start/expand candidate
       const adminScore = admin.value + admin.compliance + admin.chargeable; // 0-6
-      const status = !libDone ? "Unknown" : offerLevel === 1 ? "Expand" : "Start";
+      const status = !libDone ? "Unknown" : "Start";
       return { item, adminScore, status };
     }).filter(Boolean).sort((a, b) => b.adminScore - a.adminScore);
 
@@ -314,37 +411,48 @@
       </li>`).join("") + `</ol>`;
   }
 
-  function renderDetailTable() {
+  const VALUE_COLOR = { 2: "#1F87A6", 1: "#C9941F", 0: "#E6394A" };
+  function chip(value, label) {
+    if (value === undefined) return `<span class="vchip vchip-empty" title="No answer yet">&middot;</span>`;
+    return `<span class="vchip" style="background:${VALUE_COLOR[value]}" title="${label}"></span>`;
+  }
+
+  function renderDetailVisual() {
     const el = document.getElementById("results-detail");
     const rows = INVENTORY.map((item) => {
-      const lib = itemRoleScore("library", item.id);
-      const admin = itemRoleScore("admin", item.id);
-      const cost = itemRoleScore("costing", item.id);
+      const lib = itemRoleScore("library", item.id) || {};
+      const admin = itemRoleScore("admin", item.id) || {};
+      const cost = itemRoleScore("costing", item.id) || {};
       return { item, lib, admin, cost };
     });
 
     el.innerHTML = `
       <h3>Full detail by service</h3>
-      <div class="table-wrap">
-      <table class="detail-table">
-        <thead>
-          <tr>
-            <th>Service</th>
-            <th>Library: offer / isolate / demonstrate</th>
-            <th>Admin: value / compliance / chargeable</th>
-            <th>Costing: cost center / in F&amp;A / direct?</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows.map((r) => `
-            <tr>
-              <td>${r.item.name}</td>
-              <td>${r.lib ? `${r.lib.offer}/${r.lib.isolate}/${r.lib.demonstrate}` : "&mdash;"}</td>
-              <td>${r.admin ? `${r.admin.value}/${r.admin.compliance}/${r.admin.chargeable}` : "&mdash;"}</td>
-              <td>${r.cost ? `${r.cost.costcenter}/${r.cost.fa}/${r.cost.direct}` : "&mdash;"}</td>
-            </tr>`).join("")}
-        </tbody>
-      </table>
+      <p class="detail-legend">
+        <span class="vchip" style="background:${VALUE_COLOR[2]}"></span> Yes / strong
+        <span class="vchip" style="background:${VALUE_COLOR[1]}"></span> Partial / not sure
+        <span class="vchip" style="background:${VALUE_COLOR[0]}"></span> No
+        <span class="vchip vchip-empty">&middot;</span> Not answered
+      </p>
+      <div class="detail-rows">
+        ${rows.map((r) => `
+          <div class="detail-row">
+            <div class="detail-row-name">${r.item.name}</div>
+            <div class="detail-row-groups">
+              <div class="detail-group">
+                <span class="detail-group-label" style="color:${ROLES.library.color}">Library</span>
+                ${chip(r.lib.offer, "Offers it")}${chip(r.lib.isolate, "Can isolate cost")}${chip(r.lib.demonstrate, "Can demonstrate per-project cost")}
+              </div>
+              <div class="detail-group">
+                <span class="detail-group-label" style="color:${ROLES.admin.color}">Admin</span>
+                ${chip(r.admin.value, "Valuable to strategy")}${chip(r.admin.compliance, "Helps grant compliance")}${chip(r.admin.chargeable, "Open to direct charging")}
+              </div>
+              <div class="detail-group">
+                <span class="detail-group-label" style="color:${ROLES.costing.color}">Costing</span>
+                ${chip(r.cost.costcenter, "Has a cost center")}${chip(r.cost.idc, "In IDC library cost pool")}${chip(r.cost.direct, "Would move to direct charging")}
+              </div>
+            </div>
+          </div>`).join("")}
       </div>`;
   }
 

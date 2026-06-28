@@ -219,6 +219,47 @@ body {
 .opt-btn.val-1.selected { background: rgba(201,148,31,0.16); color: var(--gold); border-color: var(--gold); }
 .opt-btn.val-0.selected { background: rgba(230,57,74,0.12); color: var(--red-dark); border-color: var(--red); }
 
+/* ---------- locked question (library auto-No) ---------- */
+.question-locked .opt-btn { cursor: not-allowed; opacity: .55; }
+.question-locked .opt-btn:hover { border-color: var(--border); }
+.locked-note { margin: 4px 0 0; font-size: 12px; color: var(--text-muted); font-style: italic; }
+
+/* ---------- what's next panel (assessment view) ---------- */
+.whatsnext-box {
+  background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 22px 24px; margin-top: 24px;
+}
+.whatsnext-box h3 { margin: 0 0 6px; font-size: 16px; color: var(--navy); }
+.whatsnext-box > p { margin: 0 0 16px; font-size: 13.5px; color: var(--text-muted); }
+.whatsnext-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+.share-link-row { border-top: 1px solid var(--border); padding-top: 16px; }
+.share-link-label { margin: 0 0 10px; font-size: 13px; color: var(--text-muted); }
+.share-link-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.share-link-controls input {
+  flex: 1; min-width: 220px; border: 1px solid var(--border); border-radius: 7px;
+  padding: 9px 12px; font-size: 13px; color: var(--text); background: var(--bg);
+}
+
+/* ---------- visual detail chips (results "full details by service") ---------- */
+.detail-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; font-size: 12.5px; color: var(--text-muted); }
+.detail-legend-item { display: flex; align-items: center; gap: 6px; }
+.detail-rows { display: flex; flex-direction: column; gap: 14px; }
+.detail-row { border-top: 1px solid var(--border); padding-top: 12px; }
+.detail-rows .detail-row:first-child { border-top: none; padding-top: 0; }
+.detail-row-name { font-size: 13.5px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+.detail-row-groups { display: flex; gap: 22px; flex-wrap: wrap; }
+.detail-group { display: flex; flex-direction: column; gap: 4px; }
+.detail-group-label { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); }
+.detail-group-chips { display: flex; gap: 5px; }
+.vchip {
+  width: 20px; height: 20px; border-radius: 5px; display: inline-flex;
+  align-items: center; justify-content: center;
+}
+.vchip-2 { background: rgba(31,135,166,0.18); border: 1px solid var(--teal); }
+.vchip-1 { background: rgba(201,148,31,0.18); border: 1px solid var(--gold); }
+.vchip-0 { background: rgba(230,57,74,0.14); border: 1px solid var(--red); }
+.vchip-empty { background: var(--border); border: 1px solid var(--border); opacity: .6; }
+
 /* ---------- results ---------- */
 .results-header h2 { margin: 0 0 4px; color: var(--navy); }
 .results-header p { margin: 0 0 24px; color: var(--text-muted); font-size: 14px; }
@@ -272,4 +313,13 @@ body {
   .assessment-header { flex-wrap: wrap; }
   .progress-pill { margin-left: 0; }
   .tabnav-bar { overflow-x: auto; }
+}
+
+/* ---------- print (PDF export of outcomes) ---------- */
+@media print {
+  .topbar, .hero-banner, .tabnav-bar, .cta-banner, .progress-summary, .share-box,
+  .whatsnext-box, .eyebrow { display: none !important; }
+  body, #app { background: #fff; }
+  .outcome-card, .results-detail { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+  .results-grid { grid-template-columns: 1fr 1fr; }
 }

@@ -28,7 +28,7 @@
       <p class="hero-desc">
         Built on the <strong>Research Information and Data Service Inventory</strong> (Craiglow &amp; LaFlamme, ARL),
         this self-assessment asks the library, research administration, and university costing the same
-        22 services &mdash; each in their own language &mdash; then compares the answers to surface where library
+        20 services &mdash; each in their own language &mdash; then compares the answers to surface where library
         investments are ready for cost transparency, and where they should expand. It is a directional
         readiness check, not an audit.
       </p>
@@ -40,7 +40,7 @@
     <div class="info-box">
       <p class="info-box-title">WHAT YOU GET</p>
       <ul class="info-box-list">
-        <li>The same 22 services, asked three ways &mdash; library, research admin, costing.</li>
+        <li>The same 20 services, asked three ways &mdash; library, research admin, costing.</li>
         <li>An outcomes dashboard ranking cost-transparency potential and expansion priorities.</li>
         <li>Export/import so each stakeholder can answer on their own device.</li>
         <li>A shared, plain-language record of where the three teams agree &mdash; and don't.</li>
@@ -82,7 +82,7 @@
         <span class="pill-badge pill-teal">UNIVERSITY COSTING</span>
         <h2>University Costing</h2>
         <p class="role-card-sub">Institutional costing &amp; cost accounting teams</p>
-        <p>For each service: do you have a cost center for it, is it already in F&amp;A recovery, and would you move it to direct charging?</p>
+        <p>For each service: do you have a cost center for it, is it already in your IDC Library Cost Pool, and would you move it to direct charging?</p>
         <button class="btn btn-primary" data-start="costing">Start as University Costing</button>
       </article>
     </div>
@@ -113,9 +113,27 @@
         <h2 id="assessment-role-title">Assessment</h2>
         <p id="assessment-role-sub"></p>
       </div>
-      <div class="progress-pill" id="assessment-progress">0 / 22</div>
+      <div class="progress-pill" id="assessment-progress">0 / 20</div>
     </div>
     <div id="category-list"></div>
+
+    <div class="whatsnext-box" id="whatsnext-box">
+      <h3>What's next?</h3>
+      <p>You can keep going, check the combined outcomes so far, or bring in your counterpart on the other two teams.</p>
+      <div class="whatsnext-actions">
+        <button class="btn btn-secondary" data-goto="home">Continue / start another role</button>
+        <button class="btn btn-secondary" data-goto="results">See progress &amp; outcomes</button>
+      </div>
+      <div class="share-link-row">
+        <p class="share-link-label">Send this assessment to a counterpart (library, research admin, or costing) so they can fill out their section and combine results with yours:</p>
+        <div class="share-link-controls">
+          <input type="text" id="share-link-input" readonly placeholder="Click &quot;Get link&quot; to generate a shareable link">
+          <button class="btn btn-secondary" id="gen-link-btn">Get link</button>
+          <button class="btn btn-secondary" id="copy-link-btn">Copy</button>
+          <a class="btn btn-text" id="email-link-btn" href="#">Email link</a>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- RESULTS -->
@@ -123,7 +141,7 @@
     <p class="eyebrow">YOUR RESULTS</p>
     <div class="results-header">
       <h2>Outcomes at a glance</h2>
-      <p>Outcomes update automatically as more roles complete the assessment or are imported.</p>
+      <p>Outcomes update automatically as more roles complete the assessment.</p>
     </div>
     <div class="results-grid">
       <div class="outcome-card" id="outcome-transparency">
@@ -132,7 +150,7 @@
         <div class="outcome-body"></div>
       </div>
       <div class="outcome-card" id="outcome-expand">
-        <h3>Most valuable to expand or start</h3>
+        <h3>Most valuable library service to expand or start</h3>
         <p class="outcome-desc">Services research administrators value most, that the library does not yet fully offer.</p>
         <div class="outcome-body"></div>
       </div>
@@ -143,9 +161,9 @@
       <div class="cta-banner-copy">
         <p class="cta-banner-kicker">NEXT STEP</p>
         <h3>Bring these outcomes to your next cost-recovery conversation</h3>
-        <p>Export this view and share it with the other two teams, or with leadership, as a plain-language starting point for deciding what to cost, what to charge, and what to expand.</p>
+        <p>Export this view to use as a conversation starter with your unit and university partners.</p>
       </div>
-      <button class="btn btn-cta" id="export-btn-results">Export outcomes <span class="cta-arrow">&rarr;</span></button>
+      <button class="btn btn-cta" id="export-btn-results">Export as PDF <span class="cta-arrow">&rarr;</span></button>
     </div>
   </section>
 

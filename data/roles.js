@@ -9,8 +9,7 @@ const ROLES = {
     questions: [
       { key: "offer", text: (s) => `Does your library currently offer ${s}?`,
         options: [
-          { value: 2, label: "Yes, fully" },
-          { value: 1, label: "Partially" },
+          { value: 2, label: "Yes" },
           { value: 0, label: "No" }
         ] },
       { key: "isolate", text: (s) => `Can you isolate the costs of ${s} from your other library costs?`,
@@ -36,7 +35,7 @@ const ROLES = {
       { key: "value", text: (s) => `Is ${s} valuable to your institution's research strategy?`,
         options: [
           { value: 2, label: "Yes" },
-          { value: 1, label: "Somewhat" },
+          { value: 1, label: "Not sure" },
           { value: 0, label: "No" }
         ] },
       { key: "compliance", text: (s) => `Does ${s} help satisfy grant compliance requirements?`,
@@ -45,7 +44,7 @@ const ROLES = {
           { value: 1, label: "Somewhat" },
           { value: 0, label: "No" }
         ] },
-      { key: "chargeable", text: (s) => `If there were a specific, documented cost, could you charge a grant for ${s}?`,
+      { key: "chargeable", text: (s) => `If there were an allocable, documented per project cost for this service, would you be open to direct charging?`,
         options: [
           { value: 2, label: "Yes" },
           { value: 1, label: "Maybe" },
@@ -59,19 +58,17 @@ const ROLES = {
     subtitle: "Institutional costing & cost accounting teams",
     color: "#1F87A6",
     questions: [
-      { key: "costcenter", text: (s) => `Do you have a library service cost center, or a similar cost center, for ${s}?`,
+      { key: "costcenter", text: (s) => `Do you have an existing cost center, or similar mechanism, that could charge for ${s}?`,
         options: [
           { value: 2, label: "Yes" },
-          { value: 1, label: "Partially" },
           { value: 0, label: "No" }
         ] },
-      { key: "fa", text: (s) => `Are you already including ${s} in your F&A (indirect cost) rate recovery?`,
+      { key: "idc", text: (s) => `Are you including ${s} in your IDC Library Cost Pool?`,
         options: [
           { value: 2, label: "Yes" },
-          { value: 1, label: "Partially" },
-          { value: 0, label: "No / not sure" }
+          { value: 0, label: "No" }
         ] },
-      { key: "direct", text: (s) => `Would you want to move ${s} from the library cost pool to direct charging?`,
+      { key: "direct", text: () => `Would you consider moving this service to direct charging?`,
         options: [
           { value: 2, label: "Yes" },
           { value: 1, label: "Maybe" },

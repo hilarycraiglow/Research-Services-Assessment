@@ -44,12 +44,9 @@ body {
   justify-content: space-between;
   padding: 16px 24px;
 }
-.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--navy); font-size: 16px; }
-.brand-mark {
-  width: 14px; height: 14px; border-radius: 3px;
-  background: linear-gradient(135deg, var(--red), var(--navy));
-  display: inline-block;
-}
+.brand { display: flex; align-items: center; gap: 12px; font-weight: 700; color: var(--navy); font-size: 16px; }
+.brand-logo { height: 26px; display: block; }
+.brand-divider { width: 1px; height: 20px; background: var(--border); display: inline-block; }
 .eyebrow-tag {
   font-size: 12px; font-weight: 700; letter-spacing: .06em;
   color: var(--teal-dark); text-transform: uppercase;

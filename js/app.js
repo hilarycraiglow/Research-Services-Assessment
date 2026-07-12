@@ -310,6 +310,9 @@
       selectAllBtn.textContent = "Select all";
       body.appendChild(selectAllBtn);
 
+      const grid = document.createElement("div");
+      grid.className = "admin-check-grid";
+
       const checkboxes = [];
       INVENTORY.forEach((item) => {
         const answers = DATA.admin[item.id];
@@ -317,6 +320,7 @@
 
         const row = document.createElement("label");
         row.className = "admin-check-row" + (checked ? " checked" : "");
+        row.dataset.tooltip = item.desc;
 
         const cb = document.createElement("input");
         cb.type = "checkbox";
@@ -335,8 +339,9 @@
 
         row.appendChild(cb);
         row.appendChild(label);
-        body.appendChild(row);
+        grid.appendChild(row);
       });
+      body.appendChild(grid);
 
       selectAllBtn.addEventListener("click", () => {
         const allChecked = checkboxes.every((cb) => cb.checked);
@@ -375,6 +380,9 @@
     learnSelectAll.textContent = "Select all";
     learnBody.appendChild(learnSelectAll);
 
+    const learnGrid = document.createElement("div");
+    learnGrid.className = "admin-check-grid";
+
     const learnCbs = [];
     INVENTORY.forEach((item) => {
       DATA.admin[item.id] = DATA.admin[item.id] || {};
@@ -399,8 +407,9 @@
 
       row.appendChild(cb);
       row.appendChild(label);
-      learnBody.appendChild(row);
+      learnGrid.appendChild(row);
     });
+    learnBody.appendChild(learnGrid);
 
     learnSelectAll.addEventListener("click", () => {
       const allChecked = learnCbs.every((cb) => cb.checked);

@@ -204,6 +204,34 @@ body {
 .item-title h4 { margin: 0 0 2px; font-size: 14.5px; color: var(--text); }
 .item-title p { margin: 0 0 10px; font-size: 12.5px; color: var(--text-muted); }
 
+/* Library item card with offer toggle */
+.lib-item-card { padding: 14px 0; border-top: 1px solid var(--border); }
+.lib-item-card:first-child { border-top: none; }
+.lib-offer-row {
+  display: flex; align-items: flex-start; gap: 10px; cursor: pointer;
+  user-select: none; margin-bottom: 6px;
+}
+.lib-offer-cb {
+  width: 16px; height: 16px; accent-color: var(--teal); flex-shrink: 0;
+  margin-top: 2px; cursor: pointer;
+}
+.lib-offer-name {
+  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+}
+.lib-item-title { margin: 0; font-size: 14.5px; font-weight: 600; color: var(--text); }
+.lib-item-card.not-offered .lib-item-title { color: var(--text-muted); }
+.not-offered-badge {
+  font-size: 11px; font-weight: 700; letter-spacing: .05em;
+  background: #f0f0f0; color: var(--text-muted);
+  padding: 1px 7px; border-radius: 999px;
+}
+.lib-item-desc {
+  margin: 4px 0 12px 26px; font-size: 12.5px; color: var(--text-muted); line-height: 1.45;
+}
+.detail-not-offered {
+  font-size: 12px; color: var(--text-muted); font-style: italic; padding: 2px 0;
+}
+
 .question { margin-bottom: 10px; }
 .question-text { margin: 0 0 6px; font-size: 13.5px; font-weight: 600; color: var(--navy); }
 .options { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -240,6 +268,14 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 2px 12px;
+}
+.admin-cat-label {
+  grid-column: 1 / -1;
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--text-muted);
+  border-left: 3px solid currentColor;
+  padding: 2px 0 2px 8px;
+  margin: 10px 0 4px;
 }
 .admin-check-row {
   display: flex; align-items: center; gap: 8px; padding: 5px 8px;

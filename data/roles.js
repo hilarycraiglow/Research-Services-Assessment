@@ -1,5 +1,4 @@
-// Role definitions: each role asks the same three questions about every inventory item,
-// phrased in that audience's own working language.
+// Role definitions for each audience in the assessment.
 const ROLES = {
   library: {
     id: "library",
@@ -7,18 +6,26 @@ const ROLES = {
     subtitle: "Library leadership & service managers",
     color: "#0B2545",
     questions: [
-      { key: "offer", text: (s) => `Does your library currently offer ${s}?`,
+      { key: "project_specific",
+        text: () => "Can this service be identified specifically for an individual research project?",
         options: [
           { value: 2, label: "Yes" },
           { value: 0, label: "No" }
         ] },
-      { key: "isolate", text: (s) => `Can you isolate the costs of ${s} from your other library costs?`,
+      { key: "usage_scope",
+        text: () => "Is this service used by all/most sponsored projects, or only some?",
+        options: [
+          { value: 2, label: "All / most" },
+          { value: 1, label: "Some" }
+        ] },
+      { key: "researcher_request",
+        text: () => "Is the service used or requested by a researcher for the unique needs of a specific project?",
         options: [
           { value: 2, label: "Yes" },
-          { value: 1, label: "Somewhat" },
           { value: 0, label: "No" }
         ] },
-      { key: "demonstrate", text: (s) => `Can you show what ${s} costs on a per-project or per-researcher basis?`,
+      { key: "cost_tracking",
+        text: () => "Does the library already track cost, time, or effort at the level of an individual project or researcher for this service?",
         options: [
           { value: 2, label: "Yes" },
           { value: 1, label: "Somewhat" },

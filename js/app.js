@@ -11,7 +11,7 @@
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) return JSON.parse(raw);
-    } catch (e) { /* ignore corrupt data */ }
+    } catch (e) {}
     return { library: {}, admin: {}, costing: {} };
   }
 
@@ -23,44 +23,46 @@
   function encodeShareData(data) {
     return btoa(unescape(encodeURIComponent(JSON.stringify(data))));
   }
-
   function decodeShareData(str) {
     return JSON.parse(decodeURIComponent(escape(atob(str))));
   }
-
   function buildShareLink() {
     const encoded = encodeShareData(DATA);
-    const base = window.location.href.split("#")[0];
-    return `${base}#share=${encoded}`;
+    return window.location.href.split("#")[0] + `#share=${encoded}`;
   }
-
   function mergeSharedLinkData() {
     const hash = window.location.hash || "";
     if (!hash.startsWith("#share=")) return;
     try {
       const incoming = decodeShareData(hash.slice("#share=".length));
       ROLE_ORDER.forEach((roleId) => {
-        if (incoming[roleId]) {
-          DATA[roleId] = Object.assign({}, DATA[roleId], incoming[roleId]);
-        }
+        if (incoming[roleId]) DATA[roleId] = Object.assign({}, DATA[roleId], incoming[roleId]);
       });
       saveData();
       history.replaceState(null, "", window.location.pathname + window.location.search);
-    } catch (e) { /* ignore bad links */ }
+    } catch (e) {}
   }
 
   function categoryItems(catId) {
     return INVENTORY.filter((i) => i.category === catId);
   }
 
+  // ---------- COMPLETION ----------
   function roleCompletion(roleId) {
+    if (roleId === "library") return libraryCompletion();
     if (roleId === "admin") return adminCompletion();
-    const role = ROLES[roleId];
-    const answers = DATA[roleId] || {};
+    return costingCompletion();
+  }
+
+  function libraryCompletion() {
+    const answers = DATA.library || {};
+    const keys = ["project_specific", "usage_scope", "researcher_request", "cost_tracking"];
     let answered = 0;
     INVENTORY.forEach((item) => {
       const a = answers[item.id];
-      if (a && role.questions.every((q) => a[q.key] !== undefined)) answered++;
+      if (!a) return;
+      if (a.offers === false) { answered++; return; }
+      if (keys.every((k) => a[k] !== undefined)) answered++;
     });
     return { answered, total: INVENTORY.length };
   }
@@ -76,13 +78,23 @@
     return { answered, total: INVENTORY.length };
   }
 
+  function costingCompletion() {
+    const role = ROLES.costing;
+    const answers = DATA.costing || {};
+    let answered = 0;
+    INVENTORY.forEach((item) => {
+      const a = answers[item.id];
+      if (a && role.questions.every((q) => a[q.key] !== undefined)) answered++;
+    });
+    return { answered, total: INVENTORY.length };
+  }
+
   // ---------- VIEW SWITCHING ----------
   const views = {
     home: document.getElementById("view-home"),
     assessment: document.getElementById("view-assessment"),
     results: document.getElementById("view-results")
   };
-
   const heroHome = document.getElementById("hero-home");
 
   function showView(name) {
@@ -100,16 +112,13 @@
     const btn = e.target.closest(".tab-link");
     if (btn) showView(btn.dataset.view);
   });
-
   document.getElementById("back-home").addEventListener("click", () => showView("home"));
-
   document.querySelectorAll("[data-scroll-to]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const target = document.getElementById(btn.dataset.scrollTo);
       if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   });
-
   document.querySelectorAll("[data-goto]").forEach((btn) => {
     btn.addEventListener("click", () => showView(btn.dataset.goto));
   });
@@ -134,7 +143,7 @@
     }).join("");
   }
 
-  // ---------- ASSESSMENT ----------
+  // ---------- ASSESSMENT ROUTING ----------
   let currentRoleId = null;
 
   function openAssessment(roleId) {
@@ -151,53 +160,119 @@
     showView("assessment");
   }
 
-  // ---------- STANDARD (Library / Costing) ASSESSMENT ----------
+  // ---------- LIBRARY & COSTING ASSESSMENT (category accordion) ----------
   function renderCategoryList(roleId) {
-    const role = ROLES[roleId];
     const container = document.getElementById("category-list");
     container.innerHTML = "";
-
     CATEGORIES.forEach((cat) => {
       const items = categoryItems(cat.id);
       if (!items.length) return;
-
       const section = document.createElement("section");
       section.className = "cat-section";
-
       const head = document.createElement("button");
       head.className = "cat-head";
       head.style.borderLeftColor = cat.color;
       head.innerHTML = `<span>${cat.name}</span><span class="cat-count">${items.length} services</span>`;
       head.addEventListener("click", () => section.classList.toggle("open"));
       section.appendChild(head);
-
       const body = document.createElement("div");
       body.className = "cat-body";
-
-      items.forEach((item) => {
-        body.appendChild(renderItemCard(roleId, item));
-      });
-
+      items.forEach((item) => body.appendChild(renderItemCard(roleId, item)));
       section.appendChild(body);
       section.classList.add("open");
       container.appendChild(section);
     });
-
     updateAssessmentProgress(roleId);
   }
 
   function renderItemCard(roleId, item) {
-    const role = ROLES[roleId];
-    DATA[roleId][item.id] = DATA[roleId][item.id] || {};
-    const answers = DATA[roleId][item.id];
+    if (roleId === "library") return renderLibraryItemCard(item);
+    return renderCostingItemCard(item);
+  }
 
-    // Library-only: if service not offered, lock the cost-tracking questions to No.
-    const forcedNo = roleId === "library" && answers.offer === 0;
-    if (forcedNo && (answers.isolate !== 0 || answers.demonstrate !== 0)) {
-      answers.isolate = 0;
-      answers.demonstrate = 0;
+  // Library card: offer toggle checkbox + 4 new questions
+  function renderLibraryItemCard(item) {
+    DATA.library[item.id] = DATA.library[item.id] || {};
+    const answers = DATA.library[item.id];
+    const offered = answers.offers !== false;
+
+    const card = document.createElement("article");
+    card.className = "item-card lib-item-card" + (offered ? "" : " not-offered");
+
+    // Offer toggle header
+    const offerRow = document.createElement("label");
+    offerRow.className = "lib-offer-row";
+
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.className = "lib-offer-cb";
+    cb.checked = offered;
+    cb.addEventListener("change", () => {
+      answers.offers = cb.checked;
       saveData();
+      renderCategoryList("library");
+    });
+
+    const nameDiv = document.createElement("div");
+    nameDiv.className = "lib-offer-name";
+    nameDiv.innerHTML = `<span class="lib-item-title">${item.name}</span>`;
+    if (!offered) {
+      nameDiv.innerHTML += ` <span class="not-offered-badge">Not offered — questions skipped</span>`;
     }
+
+    offerRow.appendChild(cb);
+    offerRow.appendChild(nameDiv);
+    card.appendChild(offerRow);
+
+    if (!offered) return card;
+
+    // Description
+    const desc = document.createElement("p");
+    desc.className = "lib-item-desc";
+    desc.textContent = item.desc;
+    card.appendChild(desc);
+
+    // 4 questions
+    const role = ROLES.library;
+    const qWrap = document.createElement("div");
+    qWrap.className = "question-wrap";
+
+    role.questions.forEach((q) => {
+      const qEl = document.createElement("div");
+      qEl.className = "question";
+      const qText = document.createElement("p");
+      qText.className = "question-text";
+      qText.textContent = q.text();
+      qEl.appendChild(qText);
+
+      const optWrap = document.createElement("div");
+      optWrap.className = "options";
+      q.options.forEach((opt) => {
+        const optBtn = document.createElement("button");
+        optBtn.type = "button";
+        optBtn.className = `opt-btn val-${opt.value}`;
+        optBtn.textContent = opt.label;
+        if (answers[q.key] === opt.value) optBtn.classList.add("selected");
+        optBtn.addEventListener("click", () => {
+          answers[q.key] = opt.value;
+          saveData();
+          renderCategoryList("library");
+        });
+        optWrap.appendChild(optBtn);
+      });
+      qEl.appendChild(optWrap);
+      qWrap.appendChild(qEl);
+    });
+
+    card.appendChild(qWrap);
+    return card;
+  }
+
+  // Costing card: standard per-item questions
+  function renderCostingItemCard(item) {
+    const role = ROLES.costing;
+    DATA.costing[item.id] = DATA.costing[item.id] || {};
+    const answers = DATA.costing[item.id];
 
     const card = document.createElement("article");
     card.className = "item-card";
@@ -211,10 +286,8 @@
     qWrap.className = "question-wrap";
 
     role.questions.forEach((q) => {
-      const locked = forcedNo && q.key !== "offer";
-
       const qEl = document.createElement("div");
-      qEl.className = "question" + (locked ? " question-locked" : "");
+      qEl.className = "question";
       const qText = document.createElement("p");
       qText.className = "question-text";
       qText.textContent = q.text(item.name.toLowerCase());
@@ -225,34 +298,17 @@
       q.options.forEach((opt) => {
         const optBtn = document.createElement("button");
         optBtn.type = "button";
-        optBtn.className = "opt-btn";
+        optBtn.className = `opt-btn val-${opt.value}`;
         optBtn.textContent = opt.label;
         if (answers[q.key] === opt.value) optBtn.classList.add("selected");
-        optBtn.classList.add(`val-${opt.value}`);
-        if (locked) optBtn.disabled = true;
         optBtn.addEventListener("click", () => {
           answers[q.key] = opt.value;
-          if (roleId === "library" && q.key === "offer") {
-            if (opt.value === 0) {
-              answers.isolate = 0;
-              answers.demonstrate = 0;
-            } else {
-              delete answers.isolate;
-              delete answers.demonstrate;
-            }
-          }
           saveData();
-          renderCategoryList(roleId);
+          renderCategoryList("costing");
         });
         optWrap.appendChild(optBtn);
       });
       qEl.appendChild(optWrap);
-      if (locked) {
-        const note = document.createElement("p");
-        note.className = "locked-note";
-        note.textContent = "Automatically set to No — the library does not yet offer this service.";
-        qEl.appendChild(note);
-      }
       qWrap.appendChild(qEl);
     });
 
@@ -265,32 +321,18 @@
     document.getElementById("assessment-progress").textContent = `${answered} / ${total}`;
   }
 
-  // ---------- ADMIN ASSESSMENT (question-by-question format) ----------
+  // ---------- ADMIN ASSESSMENT (question-by-question, grouped by lifecycle) ----------
   const ADMIN_QUESTIONS = [
-    {
-      key: "value",
-      text: "Which of the following services are valuable to your institution's research strategy? Select all that apply.",
-      color: ROLES ? null : null  // resolved after DOM ready
-    },
-    {
-      key: "compliance",
-      text: "Which of the following services helps satisfy grant compliance requirements? Select all that apply."
-    },
-    {
-      key: "chargeable",
-      text: "If there were an allocable, documented per project cost for this service, would you be open to direct charging this service? Select all that apply."
-    }
+    { key: "value",      text: "Which of the following services are valuable to your institution's research strategy? Select all that apply." },
+    { key: "compliance", text: "Which of the following services helps satisfy grant compliance requirements? Select all that apply." },
+    { key: "chargeable", text: "If there were an allocable, documented per project cost for this service, would you be open to direct charging this service? Select all that apply." }
   ];
 
   function renderAdminAssessment() {
     DATA.admin = DATA.admin || {};
     const container = document.getElementById("category-list");
     container.innerHTML = "";
-
-    // Ensure all items have an answer object
-    INVENTORY.forEach((item) => {
-      DATA.admin[item.id] = DATA.admin[item.id] || {};
-    });
+    INVENTORY.forEach((item) => { DATA.admin[item.id] = DATA.admin[item.id] || {}; });
 
     ADMIN_QUESTIONS.forEach((q, qi) => {
       const section = document.createElement("section");
@@ -310,44 +352,60 @@
       selectAllBtn.textContent = "Select all";
       body.appendChild(selectAllBtn);
 
-      const grid = document.createElement("div");
-      grid.className = "admin-check-grid";
+      const allCheckboxes = [];
 
-      const checkboxes = [];
-      INVENTORY.forEach((item) => {
-        const answers = DATA.admin[item.id];
-        const checked = answers[q.key] === 2;
+      // Group services by lifecycle category
+      CATEGORIES.forEach((cat) => {
+        const items = INVENTORY.filter((i) => i.category === cat.id);
+        if (!items.length) return;
 
-        const row = document.createElement("label");
-        row.className = "admin-check-row" + (checked ? " checked" : "");
-        row.dataset.tooltip = item.desc;
+        const grid = document.createElement("div");
+        grid.className = "admin-check-grid";
 
-        const cb = document.createElement("input");
-        cb.type = "checkbox";
-        cb.checked = checked;
-        cb.addEventListener("change", () => {
-          answers[q.key] = cb.checked ? 2 : 0;
-          row.classList.toggle("checked", cb.checked);
-          saveData();
-          updateAdminProgress();
+        // Category label spanning full width
+        const catLabel = document.createElement("div");
+        catLabel.className = "admin-cat-label";
+        catLabel.style.borderLeftColor = cat.color;
+        catLabel.textContent = cat.name;
+        grid.appendChild(catLabel);
+
+        const catCheckboxes = [];
+        items.forEach((item) => {
+          const answers = DATA.admin[item.id];
+          const checked = answers[q.key] === 2;
+
+          const row = document.createElement("label");
+          row.className = "admin-check-row" + (checked ? " checked" : "");
+          row.dataset.tooltip = item.desc;
+
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.checked = checked;
+          cb.addEventListener("change", () => {
+            answers[q.key] = cb.checked ? 2 : 0;
+            row.classList.toggle("checked", cb.checked);
+            saveData();
+            updateAdminProgress();
+          });
+
+          const label = document.createElement("span");
+          label.className = "admin-check-label";
+          label.textContent = item.name;
+
+          row.appendChild(cb);
+          row.appendChild(label);
+          grid.appendChild(row);
+          catCheckboxes.push({ cb, itemId: item.id });
+          allCheckboxes.push({ cb, itemId: item.id });
         });
-        checkboxes.push(cb);
 
-        const label = document.createElement("span");
-        label.className = "admin-check-label";
-        label.textContent = item.name;
-
-        row.appendChild(cb);
-        row.appendChild(label);
-        grid.appendChild(row);
+        body.appendChild(grid);
       });
-      body.appendChild(grid);
 
       selectAllBtn.addEventListener("click", () => {
-        const allChecked = checkboxes.every((cb) => cb.checked);
-        checkboxes.forEach((cb, i) => {
+        const allChecked = allCheckboxes.every(({ cb }) => cb.checked);
+        allCheckboxes.forEach(({ cb, itemId }) => {
           cb.checked = !allChecked;
-          const itemId = INVENTORY[i].id;
           DATA.admin[itemId][q.key] = cb.checked ? 2 : 0;
           cb.parentElement.classList.toggle("checked", cb.checked);
         });
@@ -382,40 +440,52 @@
 
     const learnGrid = document.createElement("div");
     learnGrid.className = "admin-check-grid";
-
     const learnCbs = [];
-    INVENTORY.forEach((item) => {
-      DATA.admin[item.id] = DATA.admin[item.id] || {};
-      const checked = !!DATA.admin[item.id].learnmore;
 
-      const row = document.createElement("label");
-      row.className = "admin-check-row" + (checked ? " checked" : "");
+    CATEGORIES.forEach((cat) => {
+      const items = INVENTORY.filter((i) => i.category === cat.id);
+      if (!items.length) return;
 
-      const cb = document.createElement("input");
-      cb.type = "checkbox";
-      cb.checked = checked;
-      cb.addEventListener("change", () => {
-        DATA.admin[item.id].learnmore = cb.checked;
-        row.classList.toggle("checked", cb.checked);
-        saveData();
+      const catLabel = document.createElement("div");
+      catLabel.className = "admin-cat-label";
+      catLabel.style.borderLeftColor = cat.color;
+      catLabel.textContent = cat.name;
+      learnGrid.appendChild(catLabel);
+
+      items.forEach((item) => {
+        DATA.admin[item.id] = DATA.admin[item.id] || {};
+        const checked = !!DATA.admin[item.id].learnmore;
+
+        const row = document.createElement("label");
+        row.className = "admin-check-row" + (checked ? " checked" : "");
+
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = checked;
+        cb.addEventListener("change", () => {
+          DATA.admin[item.id].learnmore = cb.checked;
+          row.classList.toggle("checked", cb.checked);
+          saveData();
+        });
+
+        const label = document.createElement("span");
+        label.className = "admin-check-label";
+        label.textContent = item.name;
+
+        row.appendChild(cb);
+        row.appendChild(label);
+        learnGrid.appendChild(row);
+        learnCbs.push({ cb, itemId: item.id });
       });
-      learnCbs.push(cb);
-
-      const label = document.createElement("span");
-      label.className = "admin-check-label";
-      label.textContent = item.name;
-
-      row.appendChild(cb);
-      row.appendChild(label);
-      learnGrid.appendChild(row);
     });
+
     learnBody.appendChild(learnGrid);
 
     learnSelectAll.addEventListener("click", () => {
-      const allChecked = learnCbs.every((cb) => cb.checked);
-      learnCbs.forEach((cb, i) => {
+      const allChecked = learnCbs.every(({ cb }) => cb.checked);
+      learnCbs.forEach(({ cb, itemId }) => {
         cb.checked = !allChecked;
-        DATA.admin[INVENTORY[i].id].learnmore = cb.checked;
+        DATA.admin[itemId].learnmore = cb.checked;
         cb.parentElement.classList.toggle("checked", cb.checked);
       });
       saveData();
@@ -439,17 +509,11 @@
     shareLinkInput.value = buildShareLink();
     shareLinkInput.select();
   });
-
   document.getElementById("copy-link-btn").addEventListener("click", async () => {
     if (!shareLinkInput.value) shareLinkInput.value = buildShareLink();
-    try {
-      await navigator.clipboard.writeText(shareLinkInput.value);
-    } catch (e) {
-      shareLinkInput.select();
-      document.execCommand("copy");
-    }
+    try { await navigator.clipboard.writeText(shareLinkInput.value); }
+    catch (e) { shareLinkInput.select(); document.execCommand("copy"); }
   });
-
   document.getElementById("email-link-btn").addEventListener("click", (e) => {
     e.preventDefault();
     const link = shareLinkInput.value || buildShareLink();
@@ -467,60 +531,56 @@
     const blob = new Blob([JSON.stringify(DATA, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = `research-services-assessment-${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    a.href = url; a.download = `research-services-assessment-${Date.now()}.json`;
+    a.click(); URL.revokeObjectURL(url);
   }
 
   document.getElementById("export-btn").addEventListener("click", exportAnswers);
-
   const exportBtnResults = document.getElementById("export-btn-results");
-  if (exportBtnResults) {
-    exportBtnResults.addEventListener("click", () => window.print());
-  }
+  if (exportBtnResults) exportBtnResults.addEventListener("click", () => window.print());
 
   document.getElementById("import-input").addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const file = e.target.files[0]; if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
       try {
         const incoming = JSON.parse(reader.result);
         ROLE_ORDER.forEach((roleId) => {
-          if (incoming[roleId]) {
-            DATA[roleId] = Object.assign({}, DATA[roleId], incoming[roleId]);
-          }
+          if (incoming[roleId]) DATA[roleId] = Object.assign({}, DATA[roleId], incoming[roleId]);
         });
-        saveData();
-        renderHomeProgress();
+        saveData(); renderHomeProgress();
         alert("Import successful. Combined results are reflected in Outcomes.");
-      } catch (err) {
-        alert("That file could not be read as a valid export.");
-      }
+      } catch (err) { alert("That file could not be read as a valid export."); }
     };
-    reader.readAsText(file);
-    e.target.value = "";
+    reader.readAsText(file); e.target.value = "";
   });
 
   document.getElementById("reset-btn").addEventListener("click", () => {
     if (confirm("Clear all locally saved answers for every role? This cannot be undone.")) {
       DATA = { library: {}, admin: {}, costing: {} };
-      saveData();
-      renderHomeProgress();
+      saveData(); renderHomeProgress();
     }
   });
 
   // ---------- RESULTS / OUTCOMES ----------
-  function itemRoleScore(roleId, itemId) {
-    if (roleId === "admin") {
-      const a = (DATA.admin || {})[itemId];
-      if (!a) return null;
-      if (a.value === undefined || a.compliance === undefined || a.chargeable === undefined) return null;
-      return a;
-    }
-    const role = ROLES[roleId];
-    const a = (DATA[roleId] || {})[itemId];
+  function libAnswers(itemId) {
+    const a = (DATA.library || {})[itemId];
+    if (!a || a.offers === false) return null;
+    const keys = ["project_specific", "usage_scope", "researcher_request", "cost_tracking"];
+    if (!keys.every((k) => a[k] !== undefined)) return null;
+    return a;
+  }
+
+  function adminAnswers(itemId) {
+    const a = (DATA.admin || {})[itemId];
+    if (!a) return null;
+    if (a.value === undefined || a.compliance === undefined || a.chargeable === undefined) return null;
+    return a;
+  }
+
+  function costAnswers(itemId) {
+    const role = ROLES.costing;
+    const a = (DATA.costing || {})[itemId];
     if (!a) return null;
     if (!role.questions.every((q) => a[q.key] !== undefined)) return null;
     return a;
@@ -535,8 +595,8 @@
 
   function renderTransparencyOutcome() {
     const el = document.querySelector("#outcome-transparency .outcome-body");
-    const libDone = roleCompletion("library").answered > 0;
-    const costDone = roleCompletion("costing").answered > 0;
+    const libDone = libraryCompletion().answered > 0;
+    const costDone = costingCompletion().answered > 0;
 
     if (!libDone || !costDone) {
       el.innerHTML = `<p class="empty-note">Needs answers from both <strong>Library</strong> and <strong>University Costing</strong> to calculate.</p>`;
@@ -544,33 +604,34 @@
     }
 
     const ranked = INVENTORY.map((item) => {
-      const lib = itemRoleScore("library", item.id);
-      const cost = itemRoleScore("costing", item.id);
+      const lib = libAnswers(item.id);
+      const cost = costAnswers(item.id);
       if (!lib || !cost) return null;
-      if (lib.offer === 0) return null;
-      const trackingScore = lib.isolate + lib.demonstrate;
-      const appetiteScore = cost.direct + (2 - cost.idc);
-      const total = trackingScore + appetiteScore;
+      // Library score: project-specificity + researcher demand + cost tracking readiness
+      const libScore = lib.project_specific + lib.researcher_request + lib.cost_tracking;
+      // Costing appetite: openness to direct charging, not already locked in IDC pool
+      const costScore = cost.direct + (2 - cost.idc);
+      const total = libScore + costScore;
       return { item, total };
     }).filter(Boolean).sort((a, b) => b.total - a.total);
 
     if (!ranked.length) {
-      el.innerHTML = `<p class="empty-note">No services are both offered and scored yet.</p>`;
+      el.innerHTML = `<p class="empty-note">No services scored yet.</p>`;
       return;
     }
 
     el.innerHTML = `<ol class="outcome-list">` + ranked.slice(0, 8).map((r) => `
       <li>
         <span class="outcome-item-name">${r.item.name}</span>
-        <span class="outcome-meter"><span class="outcome-meter-fill" style="width:${(r.total / 8) * 100}%;background:#1F87A6"></span></span>
-        <span class="outcome-score">${r.total}/8</span>
+        <span class="outcome-meter"><span class="outcome-meter-fill" style="width:${(r.total / 10) * 100}%;background:#1F87A6"></span></span>
+        <span class="outcome-score">${r.total}/10</span>
       </li>`).join("") + `</ol>`;
   }
 
   function renderExpandOutcome() {
     const el = document.querySelector("#outcome-expand .outcome-body");
     const adminDone = adminCompletion().answered > 0;
-    const libDone = roleCompletion("library").answered > 0;
+    const libDone = libraryCompletion().answered > 0;
 
     if (!adminDone) {
       el.innerHTML = `<p class="empty-note">Needs answers from <strong>Research Administration</strong> to calculate.</p>`;
@@ -578,11 +639,12 @@
     }
 
     const ranked = INVENTORY.map((item) => {
-      const admin = itemRoleScore("admin", item.id);
+      const admin = adminAnswers(item.id);
       if (!admin) return null;
-      const lib = itemRoleScore("library", item.id);
-      const offerLevel = lib ? lib.offer : null;
-      if (offerLevel === 2) return null;
+      // Check if library offers this service (if library has answered)
+      const libA = (DATA.library || {})[item.id];
+      const libOffers = !libA ? null : libA.offers !== false;
+      if (libOffers === true) return null; // already offered — not an expand/start candidate
       const adminScore = admin.value + admin.compliance + admin.chargeable;
       const status = !libDone ? "Unknown" : "Start";
       return { item, adminScore, status };
@@ -617,6 +679,7 @@
   }
 
   const VALUE_COLOR = { 2: "#1F87A6", 1: "#C9941F", 0: "#E6394A" };
+
   function chip(value, label) {
     if (value === undefined) return `<span class="vchip vchip-empty" title="No answer yet">&middot;</span>`;
     return `<span class="vchip" style="background:${VALUE_COLOR[value]}" title="${label}"></span>`;
@@ -631,35 +694,42 @@
   function renderDetailVisual() {
     const el = document.getElementById("results-detail");
     const rows = INVENTORY.map((item) => {
-      const lib = itemRoleScore("library", item.id) || {};
-      const admin = itemRoleScore("admin", item.id) || {};
-      const cost = itemRoleScore("costing", item.id) || {};
-      return { item, lib, admin, cost };
+      const libA = (DATA.library || {})[item.id] || {};
+      const adminA = adminAnswers(item.id) || {};
+      const costA = costAnswers(item.id) || {};
+      const notOffered = libA.offers === false;
+      return { item, libA, adminA, costA, notOffered };
     });
 
     el.innerHTML = `
       <h3>Full detail by service</h3>
       <p class="detail-legend">
-        <span class="vchip" style="background:${VALUE_COLOR[2]}"></span> Yes / selected
-        <span class="vchip" style="background:${VALUE_COLOR[0]}"></span> No / not selected
+        <span class="vchip" style="background:${VALUE_COLOR[2]}"></span> Yes / selected &nbsp;
+        <span class="vchip" style="background:${VALUE_COLOR[1]}"></span> Partial &nbsp;
+        <span class="vchip" style="background:${VALUE_COLOR[0]}"></span> No / not selected &nbsp;
         <span class="vchip vchip-empty">&middot;</span> Not answered
       </p>
       <div class="detail-rows">
         ${rows.map((r) => `
           <div class="detail-row">
-            <div class="detail-row-name">${r.item.name}</div>
+            <div class="detail-row-name">${r.item.name}${r.notOffered ? ' <span class="tag tag-unknown">Not offered</span>' : ''}</div>
             <div class="detail-row-groups">
               <div class="detail-group">
                 <span class="detail-group-label" style="color:${ROLES.library.color}">Library</span>
-                ${chip(r.lib.offer, "Offers it")}${chip(r.lib.isolate, "Can isolate cost")}${chip(r.lib.demonstrate, "Can demonstrate per-project cost")}
+                ${r.notOffered
+                  ? '<span class="detail-not-offered">Not offered</span>'
+                  : chip(r.libA.project_specific, "Project-specific") +
+                    chip(r.libA.usage_scope, "Usage scope") +
+                    chip(r.libA.researcher_request, "Researcher-requested") +
+                    chip(r.libA.cost_tracking, "Tracks cost")}
               </div>
               <div class="detail-group">
                 <span class="detail-group-label" style="color:${ROLES.admin.color}">Admin</span>
-                ${chip(r.admin.value, "Valuable to strategy")}${chip(r.admin.compliance, "Helps grant compliance")}${chip(r.admin.chargeable, "Open to direct charging")}${learnMoreChip(r.item.id)}
+                ${chip(r.adminA.value, "Valuable to strategy")}${chip(r.adminA.compliance, "Helps grant compliance")}${chip(r.adminA.chargeable, "Open to direct charging")}${learnMoreChip(r.item.id)}
               </div>
               <div class="detail-group">
                 <span class="detail-group-label" style="color:${ROLES.costing.color}">Costing</span>
-                ${chip(r.cost.costcenter, "Has a cost center")}${chip(r.cost.idc, "In IDC library cost pool")}${chip(r.cost.direct, "Would move to direct charging")}
+                ${chip(r.costA.costcenter, "Has a cost center")}${chip(r.costA.idc, "In IDC library cost pool")}${chip(r.costA.direct, "Would move to direct charging")}
               </div>
             </div>
           </div>`).join("")}

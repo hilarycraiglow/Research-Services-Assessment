@@ -718,7 +718,7 @@
     const costDone = costingCompletion().answered > 0;
 
     if (!libDone || !costDone) {
-      el.innerHTML = `<p class="empty-note">Needs answers from both <strong>Library</strong> and <strong>University Costing</strong> to calculate.</p>`;
+      el.innerHTML = `<p class="empty-note">Needs answers from both <strong>Library</strong> and <strong>Institutional Finance/Costing</strong> to calculate.</p>`;
       return;
     }
 
@@ -795,7 +795,7 @@
       return { item, tags };
     }).filter(Boolean);
     if (!items.length) {
-      el.innerHTML = `<p class="empty-note">No services selected yet — Research Administration and University Costing can each flag services for follow-up in the optional section at the end of their assessment.</p>`;
+      el.innerHTML = `<p class="empty-note">No services selected yet — Research Administration and Institutional Finance/Costing can each flag services for follow-up in the optional section at the end of their assessment.</p>`;
       return;
     }
     el.innerHTML = `<ul class="outcome-list">` + items.map((r) => `
@@ -855,7 +855,7 @@
                 ${chip(r.adminA.value, "Valuable to strategy")}${chip(r.adminA.compliance, "Helps grant compliance")}${chip(r.adminA.chargeable, "Open to direct charging")}${learnMoreChip(r.item.id)}
               </div>
               <div class="detail-group">
-                <span class="detail-group-label" style="color:${ROLES.costing.color}">Costing</span>
+                <span class="detail-group-label" style="color:${ROLES.costing.color}">Finance/Costing</span>
                 ${chip(r.costA.idc, "In IDC cost pool")}${chip(r.costA.costcenter, "Has a cost center")}${chip(r.costA.phase_in, "Phase-in path available")}${r.costA.learnmore ? `<span class="vchip" style="background:#1F87A6" title="Wants to learn more"></span>` : ''}
               </div>
             </div>

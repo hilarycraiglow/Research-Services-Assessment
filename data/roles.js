@@ -61,14 +61,14 @@ const ROLES = {
   },
   costing: {
     id: "costing",
-    label: "University Costing",
-    subtitle: "Institutional costing & cost accounting teams",
+    label: "Institutional Finance/Costing",
+    subtitle: "Institutional research finance or cost accounting teams",
     color: "#1F87A6",
     questions: [
       { key: "idc",
         text: "Do you include the cost of this service in your Library Cost Pool for IDC calculations?" },
       { key: "costcenter",
-        text: "Do you have an existing cost center, or similar mechanism, that could be directly charged for this service?" },
+        text: "Do you have an existing cost center, or similar mechanism, that could be used to direct charge departments or grants for this service?" },
       { key: "phase_in",
         text: "Is there a phase-in or pilot path to direct charge this service before a broader implementation?" }
     ]

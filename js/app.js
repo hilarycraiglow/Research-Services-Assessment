@@ -19,7 +19,7 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA));
   }
 
-  // ---------- SHARE LINK (no backend: answers travel inside the URL) ----------
+  // ---------- SHARE LINK ----------
   function encodeShareData(data) {
     return btoa(unescape(encodeURIComponent(JSON.stringify(data))));
   }
@@ -54,12 +54,24 @@
   }
 
   function roleCompletion(roleId) {
+    if (roleId === "admin") return adminCompletion();
     const role = ROLES[roleId];
     const answers = DATA[roleId] || {};
     let answered = 0;
     INVENTORY.forEach((item) => {
       const a = answers[item.id];
       if (a && role.questions.every((q) => a[q.key] !== undefined)) answered++;
+    });
+    return { answered, total: INVENTORY.length };
+  }
+
+  function adminCompletion() {
+    const answers = DATA.admin || {};
+    const keys = ["value", "compliance", "chargeable"];
+    let answered = 0;
+    INVENTORY.forEach((item) => {
+      const a = answers[item.id];
+      if (a && keys.every((k) => a[k] !== undefined)) answered++;
     });
     return { answered, total: INVENTORY.length };
   }
@@ -131,10 +143,15 @@
     document.getElementById("assessment-role-title").textContent = `${role.label} Assessment`;
     document.getElementById("assessment-role-sub").textContent = role.subtitle;
     document.getElementById("share-link-input").value = "";
-    renderCategoryList(roleId);
+    if (roleId === "admin") {
+      renderAdminAssessment();
+    } else {
+      renderCategoryList(roleId);
+    }
     showView("assessment");
   }
 
+  // ---------- STANDARD (Library / Costing) ASSESSMENT ----------
   function renderCategoryList(roleId) {
     const role = ROLES[roleId];
     const container = document.getElementById("category-list");
@@ -174,8 +191,7 @@
     DATA[roleId][item.id] = DATA[roleId][item.id] || {};
     const answers = DATA[roleId][item.id];
 
-    // Library-only rule: if the library doesn't offer a service, the cost-tracking
-    // questions for it are meaningless, so they're forced to "No" and locked.
+    // Library-only: if service not offered, lock the cost-tracking questions to No.
     const forcedNo = roleId === "library" && answers.offer === 0;
     if (forcedNo && (answers.isolate !== 0 || answers.demonstrate !== 0)) {
       answers.isolate = 0;
@@ -249,7 +265,165 @@
     document.getElementById("assessment-progress").textContent = `${answered} / ${total}`;
   }
 
-  // ---------- SHARE LINK UI (assessment "what's next" panel) ----------
+  // ---------- ADMIN ASSESSMENT (question-by-question format) ----------
+  const ADMIN_QUESTIONS = [
+    {
+      key: "value",
+      text: "Which of the following services are valuable to your institution's research strategy? Select all that apply.",
+      color: ROLES ? null : null  // resolved after DOM ready
+    },
+    {
+      key: "compliance",
+      text: "Which of the following services helps satisfy grant compliance requirements? Select all that apply."
+    },
+    {
+      key: "chargeable",
+      text: "If there were an allocable, documented per project cost for this service, would you be open to direct charging this service? Select all that apply."
+    }
+  ];
+
+  function renderAdminAssessment() {
+    DATA.admin = DATA.admin || {};
+    const container = document.getElementById("category-list");
+    container.innerHTML = "";
+
+    // Ensure all items have an answer object
+    INVENTORY.forEach((item) => {
+      DATA.admin[item.id] = DATA.admin[item.id] || {};
+    });
+
+    ADMIN_QUESTIONS.forEach((q, qi) => {
+      const section = document.createElement("section");
+      section.className = "cat-section open admin-q-section";
+
+      const head = document.createElement("div");
+      head.className = "admin-q-head";
+      head.innerHTML = `<span class="admin-q-num">Question ${qi + 1}</span><p class="admin-q-text">${q.text}</p>`;
+      section.appendChild(head);
+
+      const body = document.createElement("div");
+      body.className = "cat-body admin-q-body";
+
+      const selectAllBtn = document.createElement("button");
+      selectAllBtn.type = "button";
+      selectAllBtn.className = "btn btn-text admin-select-all";
+      selectAllBtn.textContent = "Select all";
+      body.appendChild(selectAllBtn);
+
+      const checkboxes = [];
+      INVENTORY.forEach((item) => {
+        const answers = DATA.admin[item.id];
+        const checked = answers[q.key] === 2;
+
+        const row = document.createElement("label");
+        row.className = "admin-check-row" + (checked ? " checked" : "");
+
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = checked;
+        cb.addEventListener("change", () => {
+          answers[q.key] = cb.checked ? 2 : 0;
+          row.classList.toggle("checked", cb.checked);
+          saveData();
+          updateAdminProgress();
+        });
+        checkboxes.push(cb);
+
+        const label = document.createElement("span");
+        label.className = "admin-check-label";
+        label.textContent = item.name;
+
+        row.appendChild(cb);
+        row.appendChild(label);
+        body.appendChild(row);
+      });
+
+      selectAllBtn.addEventListener("click", () => {
+        const allChecked = checkboxes.every((cb) => cb.checked);
+        checkboxes.forEach((cb, i) => {
+          cb.checked = !allChecked;
+          const itemId = INVENTORY[i].id;
+          DATA.admin[itemId][q.key] = cb.checked ? 2 : 0;
+          cb.parentElement.classList.toggle("checked", cb.checked);
+        });
+        saveData();
+        updateAdminProgress();
+      });
+
+      section.appendChild(body);
+      container.appendChild(section);
+    });
+
+    // Optional "learn more" section
+    const learnSection = document.createElement("section");
+    learnSection.className = "cat-section open admin-q-section admin-learn-section";
+
+    const learnHead = document.createElement("div");
+    learnHead.className = "admin-q-head admin-learn-head";
+    learnHead.innerHTML = `
+      <span class="admin-q-num">Optional</span>
+      <p class="admin-q-text">I'd like to learn more about the following services. Select all that apply.</p>
+      <p class="admin-q-sub">The library will be notified which services you want to discuss further.</p>`;
+    learnSection.appendChild(learnHead);
+
+    const learnBody = document.createElement("div");
+    learnBody.className = "cat-body admin-q-body";
+
+    const learnSelectAll = document.createElement("button");
+    learnSelectAll.type = "button";
+    learnSelectAll.className = "btn btn-text admin-select-all";
+    learnSelectAll.textContent = "Select all";
+    learnBody.appendChild(learnSelectAll);
+
+    const learnCbs = [];
+    INVENTORY.forEach((item) => {
+      DATA.admin[item.id] = DATA.admin[item.id] || {};
+      const checked = !!DATA.admin[item.id].learnmore;
+
+      const row = document.createElement("label");
+      row.className = "admin-check-row" + (checked ? " checked" : "");
+
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = checked;
+      cb.addEventListener("change", () => {
+        DATA.admin[item.id].learnmore = cb.checked;
+        row.classList.toggle("checked", cb.checked);
+        saveData();
+      });
+      learnCbs.push(cb);
+
+      const label = document.createElement("span");
+      label.className = "admin-check-label";
+      label.textContent = item.name;
+
+      row.appendChild(cb);
+      row.appendChild(label);
+      learnBody.appendChild(row);
+    });
+
+    learnSelectAll.addEventListener("click", () => {
+      const allChecked = learnCbs.every((cb) => cb.checked);
+      learnCbs.forEach((cb, i) => {
+        cb.checked = !allChecked;
+        DATA.admin[INVENTORY[i].id].learnmore = cb.checked;
+        cb.parentElement.classList.toggle("checked", cb.checked);
+      });
+      saveData();
+    });
+
+    learnSection.appendChild(learnBody);
+    container.appendChild(learnSection);
+
+    updateAdminProgress();
+  }
+
+  function updateAdminProgress() {
+    const { answered, total } = adminCompletion();
+    document.getElementById("assessment-progress").textContent = `${answered} / ${total}`;
+  }
+
+  // ---------- SHARE LINK UI ----------
   const shareLinkInput = document.getElementById("share-link-input");
 
   document.getElementById("gen-link-btn").addEventListener("click", () => {
@@ -330,6 +504,12 @@
 
   // ---------- RESULTS / OUTCOMES ----------
   function itemRoleScore(roleId, itemId) {
+    if (roleId === "admin") {
+      const a = (DATA.admin || {})[itemId];
+      if (!a) return null;
+      if (a.value === undefined || a.compliance === undefined || a.chargeable === undefined) return null;
+      return a;
+    }
     const role = ROLES[roleId];
     const a = (DATA[roleId] || {})[itemId];
     if (!a) return null;
@@ -340,6 +520,7 @@
   function renderResults() {
     renderTransparencyOutcome();
     renderExpandOutcome();
+    renderLearnMoreOutcome();
     renderDetailVisual();
   }
 
@@ -357,11 +538,11 @@
       const lib = itemRoleScore("library", item.id);
       const cost = itemRoleScore("costing", item.id);
       if (!lib || !cost) return null;
-      if (lib.offer === 0) return null; // not offered yet, can't model transparency on it
-      const trackingScore = lib.isolate + lib.demonstrate; // 0-4
-      const appetiteScore = cost.direct + (2 - cost.idc); // not-already-in-IDC-pool + open to direct charging, 0-4
-      const total = trackingScore + appetiteScore; // 0-8
-      return { item, total, trackingScore, appetiteScore };
+      if (lib.offer === 0) return null;
+      const trackingScore = lib.isolate + lib.demonstrate;
+      const appetiteScore = cost.direct + (2 - cost.idc);
+      const total = trackingScore + appetiteScore;
+      return { item, total };
     }).filter(Boolean).sort((a, b) => b.total - a.total);
 
     if (!ranked.length) {
@@ -379,7 +560,7 @@
 
   function renderExpandOutcome() {
     const el = document.querySelector("#outcome-expand .outcome-body");
-    const adminDone = roleCompletion("admin").answered > 0;
+    const adminDone = adminCompletion().answered > 0;
     const libDone = roleCompletion("library").answered > 0;
 
     if (!adminDone) {
@@ -392,14 +573,14 @@
       if (!admin) return null;
       const lib = itemRoleScore("library", item.id);
       const offerLevel = lib ? lib.offer : null;
-      if (offerLevel === 2) return null; // already fully offered, not a start/expand candidate
-      const adminScore = admin.value + admin.compliance + admin.chargeable; // 0-6
+      if (offerLevel === 2) return null;
+      const adminScore = admin.value + admin.compliance + admin.chargeable;
       const status = !libDone ? "Unknown" : "Start";
       return { item, adminScore, status };
     }).filter(Boolean).sort((a, b) => b.adminScore - a.adminScore);
 
     if (!ranked.length) {
-      el.innerHTML = `<p class="empty-note">No expansion gaps found with current data — library already offers the services research administration values most.</p>`;
+      el.innerHTML = `<p class="empty-note">No expansion gaps found — the library already offers the services research administration values most.</p>`;
       return;
     }
 
@@ -411,10 +592,31 @@
       </li>`).join("") + `</ol>`;
   }
 
+  function renderLearnMoreOutcome() {
+    const el = document.querySelector("#outcome-learnmore .outcome-body");
+    if (!el) return;
+    const items = INVENTORY.filter((item) => {
+      const a = (DATA.admin || {})[item.id];
+      return a && a.learnmore;
+    });
+    if (!items.length) {
+      el.innerHTML = `<p class="empty-note">No services selected yet — the Research Administrator can flag services for follow-up in the optional section at the end of their assessment.</p>`;
+      return;
+    }
+    el.innerHTML = `<ul class="outcome-list">` + items.map((item) => `
+      <li><span class="outcome-item-name">${item.name}</span></li>`).join("") + `</ul>`;
+  }
+
   const VALUE_COLOR = { 2: "#1F87A6", 1: "#C9941F", 0: "#E6394A" };
   function chip(value, label) {
     if (value === undefined) return `<span class="vchip vchip-empty" title="No answer yet">&middot;</span>`;
     return `<span class="vchip" style="background:${VALUE_COLOR[value]}" title="${label}"></span>`;
+  }
+
+  function learnMoreChip(itemId) {
+    const a = (DATA.admin || {})[itemId];
+    if (!a || !a.learnmore) return `<span class="vchip vchip-empty" title="Not flagged">&middot;</span>`;
+    return `<span class="vchip" style="background:#52733E" title="Wants to learn more"></span>`;
   }
 
   function renderDetailVisual() {
@@ -429,9 +631,8 @@
     el.innerHTML = `
       <h3>Full detail by service</h3>
       <p class="detail-legend">
-        <span class="vchip" style="background:${VALUE_COLOR[2]}"></span> Yes / strong
-        <span class="vchip" style="background:${VALUE_COLOR[1]}"></span> Partial / not sure
-        <span class="vchip" style="background:${VALUE_COLOR[0]}"></span> No
+        <span class="vchip" style="background:${VALUE_COLOR[2]}"></span> Yes / selected
+        <span class="vchip" style="background:${VALUE_COLOR[0]}"></span> No / not selected
         <span class="vchip vchip-empty">&middot;</span> Not answered
       </p>
       <div class="detail-rows">
@@ -445,7 +646,7 @@
               </div>
               <div class="detail-group">
                 <span class="detail-group-label" style="color:${ROLES.admin.color}">Admin</span>
-                ${chip(r.admin.value, "Valuable to strategy")}${chip(r.admin.compliance, "Helps grant compliance")}${chip(r.admin.chargeable, "Open to direct charging")}
+                ${chip(r.admin.value, "Valuable to strategy")}${chip(r.admin.compliance, "Helps grant compliance")}${chip(r.admin.chargeable, "Open to direct charging")}${learnMoreChip(r.item.id)}
               </div>
               <div class="detail-group">
                 <span class="detail-group-label" style="color:${ROLES.costing.color}">Costing</span>

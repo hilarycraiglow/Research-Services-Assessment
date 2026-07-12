@@ -69,10 +69,8 @@ const ROLES = {
         text: "Do you include the cost of this service in your Library Cost Pool for IDC calculations?" },
       { key: "costcenter",
         text: "Do you have an existing cost center, or similar mechanism, that could be directly charged for this service?" },
-      { key: "fa_impact",
-        text: "Would removing this service from the Library Cost Pool and shrinking the base change the F&A rate calculation in a way that helps or hurts overall recovery?" },
       { key: "phase_in",
-        text: "Is there a phase-in or pilot path to direct charge before a broader implementation?" }
+        text: "Is there a phase-in or pilot path to direct charge this service before a broader implementation?" }
     ]
   }
 };

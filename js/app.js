@@ -168,7 +168,7 @@
     if (roleId === "library") {
       const hint = document.createElement("p");
       hint.className = "lib-offer-hint";
-      hint.textContent = "Each service below is checked by default. Uncheck the box if your library does not offer that service — those questions will be skipped.";
+      hint.textContent = "Each service below is checked by default. Uncheck the box if your library does not offer that service.";
       container.appendChild(hint);
     }
     CATEGORIES.forEach((cat) => {
@@ -361,14 +361,81 @@
       container.appendChild(section);
     });
 
+    // Optional "learn more" section
+    const learnSection = document.createElement("section");
+    learnSection.className = "cat-section open admin-q-section admin-learn-section";
+
+    const learnHead = document.createElement("div");
+    learnHead.className = "admin-q-head admin-learn-head";
+    learnHead.innerHTML = `
+      <span class="admin-q-num">Optional</span>
+      <p class="admin-q-text">I'd like to learn more about the following services. Select all that apply.</p>`;
+    learnSection.appendChild(learnHead);
+
+    const learnBody = document.createElement("div");
+    learnBody.className = "cat-body admin-q-body";
+
+    const learnSelectAll = document.createElement("button");
+    learnSelectAll.type = "button";
+    learnSelectAll.className = "btn btn-text admin-select-all";
+    learnSelectAll.textContent = "Select all";
+    learnBody.appendChild(learnSelectAll);
+
+    const learnGrid = document.createElement("div");
+    learnGrid.className = "admin-check-grid";
+    const learnCbs = [];
+
+    CATEGORIES.forEach((cat) => {
+      const catItems = INVENTORY.filter((i) => i.category === cat.id);
+      if (!catItems.length) return;
+      const catLabel = document.createElement("div");
+      catLabel.className = "admin-cat-label";
+      catLabel.style.borderLeftColor = cat.color;
+      catLabel.textContent = cat.name;
+      learnGrid.appendChild(catLabel);
+      catItems.forEach((item) => {
+        DATA.costing[item.id] = DATA.costing[item.id] || {};
+        const checked = !!DATA.costing[item.id].learnmore;
+        const row = document.createElement("label");
+        row.className = "admin-check-row" + (checked ? " checked" : "");
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = checked;
+        cb.addEventListener("change", () => {
+          DATA.costing[item.id].learnmore = cb.checked;
+          row.classList.toggle("checked", cb.checked);
+          saveData();
+        });
+        const lbl = document.createElement("span");
+        lbl.className = "admin-check-label";
+        lbl.textContent = item.name;
+        row.appendChild(cb);
+        row.appendChild(lbl);
+        learnGrid.appendChild(row);
+        learnCbs.push({ cb, itemId: item.id });
+      });
+    });
+
+    learnBody.appendChild(learnGrid);
+    learnSelectAll.addEventListener("click", () => {
+      const allChecked = learnCbs.every(({ cb }) => cb.checked);
+      learnCbs.forEach(({ cb, itemId }) => {
+        cb.checked = !allChecked;
+        DATA.costing[itemId].learnmore = cb.checked;
+        cb.parentElement.classList.toggle("checked", cb.checked);
+      });
+      saveData();
+    });
+
+    learnSection.appendChild(learnBody);
+    container.appendChild(learnSection);
+
     updateCostingProgress();
   }
 
   function updateCostingProgress() {
     const { answered, total } = costingCompletion();
     document.getElementById("assessment-progress").textContent = `${answered} / ${total}`;
-    const whatsnext = document.getElementById("whatsnext-box");
-    if (whatsnext) whatsnext.style.display = answered === total ? "" : "none";
   }
 
   function updateAssessmentProgress(roleId) {
@@ -480,8 +547,7 @@
     learnHead.className = "admin-q-head admin-learn-head";
     learnHead.innerHTML = `
       <span class="admin-q-num">Optional</span>
-      <p class="admin-q-text">I'd like to learn more about the following services. Select all that apply.</p>
-      <p class="admin-q-sub">The library will be notified which services you want to discuss further.</p>`;
+      <p class="admin-q-text">I'd like to learn more about the following services. Select all that apply.</p>`;
     learnSection.appendChild(learnHead);
 
     const learnBody = document.createElement("div");
@@ -719,16 +785,24 @@
   function renderLearnMoreOutcome() {
     const el = document.querySelector("#outcome-learnmore .outcome-body");
     if (!el) return;
-    const items = INVENTORY.filter((item) => {
-      const a = (DATA.admin || {})[item.id];
-      return a && a.learnmore;
-    });
+    const items = INVENTORY.map((item) => {
+      const adminFlag = !!((DATA.admin || {})[item.id] || {}).learnmore;
+      const costFlag  = !!((DATA.costing || {})[item.id] || {}).learnmore;
+      if (!adminFlag && !costFlag) return null;
+      const tags = [];
+      if (adminFlag) tags.push("Research Admin");
+      if (costFlag)  tags.push("Costing");
+      return { item, tags };
+    }).filter(Boolean);
     if (!items.length) {
-      el.innerHTML = `<p class="empty-note">No services selected yet — the Research Administrator can flag services for follow-up in the optional section at the end of their assessment.</p>`;
+      el.innerHTML = `<p class="empty-note">No services selected yet — Research Administration and University Costing can each flag services for follow-up in the optional section at the end of their assessment.</p>`;
       return;
     }
-    el.innerHTML = `<ul class="outcome-list">` + items.map((item) => `
-      <li><span class="outcome-item-name">${item.name}</span></li>`).join("") + `</ul>`;
+    el.innerHTML = `<ul class="outcome-list">` + items.map((r) => `
+      <li>
+        <span class="outcome-item-name">${r.item.name}</span>
+        <span style="font-size:11px;color:var(--text-muted);margin-left:6px">${r.tags.join(", ")}</span>
+      </li>`).join("") + `</ul>`;
   }
 
   const VALUE_COLOR = { 2: "#1F87A6", 1: "#C9941F", 0: "#E6394A" };
@@ -782,7 +856,7 @@
               </div>
               <div class="detail-group">
                 <span class="detail-group-label" style="color:${ROLES.costing.color}">Costing</span>
-                ${chip(r.costA.idc, "In IDC cost pool")}${chip(r.costA.costcenter, "Has a cost center")}${chip(r.costA.fa_impact, "F&A rate impact considered")}${chip(r.costA.phase_in, "Phase-in path available")}
+                ${chip(r.costA.idc, "In IDC cost pool")}${chip(r.costA.costcenter, "Has a cost center")}${chip(r.costA.phase_in, "Phase-in path available")}${r.costA.learnmore ? `<span class="vchip" style="background:#1F87A6" title="Wants to learn more"></span>` : ''}
               </div>
             </div>
           </div>`).join("")}

@@ -79,12 +79,11 @@
   }
 
   function costingCompletion() {
-    const role = ROLES.costing;
     const answers = DATA.costing || {};
     let answered = 0;
     INVENTORY.forEach((item) => {
       const a = answers[item.id];
-      if (a && role.questions.every((q) => a[q.key] !== undefined)) answered++;
+      if (a && ROLES.costing.questions.some((q) => a[q.key] !== undefined)) answered++;
     });
     return { answered, total: INVENTORY.length };
   }
@@ -154,6 +153,8 @@
     document.getElementById("share-link-input").value = "";
     if (roleId === "admin") {
       renderAdminAssessment();
+    } else if (roleId === "costing") {
+      renderCostingAssessment();
     } else {
       renderCategoryList(roleId);
     }
@@ -164,6 +165,12 @@
   function renderCategoryList(roleId) {
     const container = document.getElementById("category-list");
     container.innerHTML = "";
+    if (roleId === "library") {
+      const hint = document.createElement("p");
+      hint.className = "lib-offer-hint";
+      hint.textContent = "Each service below is checked by default. Uncheck the box if your library does not offer that service — those questions will be skipped.";
+      container.appendChild(hint);
+    }
     CATEGORIES.forEach((cat) => {
       const items = categoryItems(cat.id);
       if (!items.length) return;
@@ -268,52 +275,100 @@
     return card;
   }
 
-  // Costing card: standard per-item questions
-  function renderCostingItemCard(item) {
-    const role = ROLES.costing;
-    DATA.costing[item.id] = DATA.costing[item.id] || {};
-    const answers = DATA.costing[item.id];
+  // Costing assessment: question-by-question checkbox format (mirrors admin layout)
+  function renderCostingAssessment() {
+    DATA.costing = DATA.costing || {};
+    const container = document.getElementById("category-list");
+    container.innerHTML = "";
+    INVENTORY.forEach((item) => { DATA.costing[item.id] = DATA.costing[item.id] || {}; });
 
-    const card = document.createElement("article");
-    card.className = "item-card";
+    ROLES.costing.questions.forEach((q, qi) => {
+      const section = document.createElement("section");
+      section.className = "cat-section open admin-q-section";
 
-    const title = document.createElement("div");
-    title.className = "item-title";
-    title.innerHTML = `<h4>${item.name}</h4><p>${item.desc}</p>`;
-    card.appendChild(title);
+      const head = document.createElement("div");
+      head.className = "admin-q-head";
+      head.innerHTML = `<span class="admin-q-num">Question ${qi + 1}</span><p class="admin-q-text">${q.text}</p>`;
+      section.appendChild(head);
 
-    const qWrap = document.createElement("div");
-    qWrap.className = "question-wrap";
+      const body = document.createElement("div");
+      body.className = "cat-body admin-q-body";
 
-    role.questions.forEach((q) => {
-      const qEl = document.createElement("div");
-      qEl.className = "question";
-      const qText = document.createElement("p");
-      qText.className = "question-text";
-      qText.textContent = q.text(item.name.toLowerCase());
-      qEl.appendChild(qText);
+      const selectAllBtn = document.createElement("button");
+      selectAllBtn.type = "button";
+      selectAllBtn.className = "btn btn-text admin-select-all";
+      selectAllBtn.textContent = "Select all";
+      body.appendChild(selectAllBtn);
 
-      const optWrap = document.createElement("div");
-      optWrap.className = "options";
-      q.options.forEach((opt) => {
-        const optBtn = document.createElement("button");
-        optBtn.type = "button";
-        optBtn.className = `opt-btn val-${opt.value}`;
-        optBtn.textContent = opt.label;
-        if (answers[q.key] === opt.value) optBtn.classList.add("selected");
-        optBtn.addEventListener("click", () => {
-          answers[q.key] = opt.value;
-          saveData();
-          renderCategoryList("costing");
+      const allCheckboxes = [];
+
+      CATEGORIES.forEach((cat) => {
+        const items = INVENTORY.filter((i) => i.category === cat.id);
+        if (!items.length) return;
+
+        const grid = document.createElement("div");
+        grid.className = "admin-check-grid";
+
+        const catLabel = document.createElement("div");
+        catLabel.className = "admin-cat-label";
+        catLabel.style.borderLeftColor = cat.color;
+        catLabel.textContent = cat.name;
+        grid.appendChild(catLabel);
+
+        items.forEach((item) => {
+          const answers = DATA.costing[item.id];
+          const checked = answers[q.key] === 2;
+
+          const row = document.createElement("label");
+          row.className = "admin-check-row" + (checked ? " checked" : "");
+          row.dataset.tooltip = item.desc;
+
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.checked = checked;
+          cb.addEventListener("change", () => {
+            answers[q.key] = cb.checked ? 2 : 0;
+            row.classList.toggle("checked", cb.checked);
+            saveData();
+            updateCostingProgress();
+          });
+
+          const label = document.createElement("span");
+          label.className = "admin-check-label";
+          label.textContent = item.name;
+
+          row.appendChild(cb);
+          row.appendChild(label);
+          grid.appendChild(row);
+          allCheckboxes.push({ cb, itemId: item.id });
         });
-        optWrap.appendChild(optBtn);
+
+        body.appendChild(grid);
       });
-      qEl.appendChild(optWrap);
-      qWrap.appendChild(qEl);
+
+      selectAllBtn.addEventListener("click", () => {
+        const allChecked = allCheckboxes.every(({ cb }) => cb.checked);
+        allCheckboxes.forEach(({ cb, itemId }) => {
+          cb.checked = !allChecked;
+          DATA.costing[itemId][q.key] = cb.checked ? 2 : 0;
+          cb.parentElement.classList.toggle("checked", cb.checked);
+        });
+        saveData();
+        updateCostingProgress();
+      });
+
+      section.appendChild(body);
+      container.appendChild(section);
     });
 
-    card.appendChild(qWrap);
-    return card;
+    updateCostingProgress();
+  }
+
+  function updateCostingProgress() {
+    const { answered, total } = costingCompletion();
+    document.getElementById("assessment-progress").textContent = `${answered} / ${total}`;
+    const whatsnext = document.getElementById("whatsnext-box");
+    if (whatsnext) whatsnext.style.display = answered === total ? "" : "none";
   }
 
   function updateAssessmentProgress(roleId) {
@@ -579,10 +634,8 @@
   }
 
   function costAnswers(itemId) {
-    const role = ROLES.costing;
     const a = (DATA.costing || {})[itemId];
     if (!a) return null;
-    if (!role.questions.every((q) => a[q.key] !== undefined)) return null;
     return a;
   }
 
@@ -608,9 +661,9 @@
       const cost = costAnswers(item.id);
       if (!lib || !cost) return null;
       // Library score: project-specificity + researcher demand + cost tracking readiness
-      const libScore = lib.project_specific + lib.researcher_request + lib.cost_tracking;
-      // Costing appetite: openness to direct charging, not already locked in IDC pool
-      const costScore = cost.direct + (2 - cost.idc);
+      const libScore = (lib.project_specific || 0) + (lib.researcher_request || 0) + (lib.cost_tracking || 0);
+      // Costing appetite: has a cost center + phase-in path available
+      const costScore = (cost.costcenter || 0) + (cost.phase_in || 0);
       const total = libScore + costScore;
       return { item, total };
     }).filter(Boolean).sort((a, b) => b.total - a.total);
@@ -623,8 +676,8 @@
     el.innerHTML = `<ol class="outcome-list">` + ranked.slice(0, 8).map((r) => `
       <li>
         <span class="outcome-item-name">${r.item.name}</span>
-        <span class="outcome-meter"><span class="outcome-meter-fill" style="width:${(r.total / 10) * 100}%;background:#1F87A6"></span></span>
-        <span class="outcome-score">${r.total}/10</span>
+        <span class="outcome-meter"><span class="outcome-meter-fill" style="width:${(r.total / 8) * 100}%;background:#1F87A6"></span></span>
+        <span class="outcome-score">${r.total}/8</span>
       </li>`).join("") + `</ol>`;
   }
 
@@ -729,7 +782,7 @@
               </div>
               <div class="detail-group">
                 <span class="detail-group-label" style="color:${ROLES.costing.color}">Costing</span>
-                ${chip(r.costA.costcenter, "Has a cost center")}${chip(r.costA.idc, "In IDC library cost pool")}${chip(r.costA.direct, "Would move to direct charging")}
+                ${chip(r.costA.idc, "In IDC cost pool")}${chip(r.costA.costcenter, "Has a cost center")}${chip(r.costA.fa_impact, "F&A rate impact considered")}${chip(r.costA.phase_in, "Phase-in path available")}
               </div>
             </div>
           </div>`).join("")}

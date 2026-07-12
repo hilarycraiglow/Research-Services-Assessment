@@ -65,22 +65,14 @@ const ROLES = {
     subtitle: "Institutional costing & cost accounting teams",
     color: "#1F87A6",
     questions: [
-      { key: "costcenter", text: (s) => `Do you have an existing cost center, or similar mechanism, that could charge for ${s}?`,
-        options: [
-          { value: 2, label: "Yes" },
-          { value: 0, label: "No" }
-        ] },
-      { key: "idc", text: (s) => `Are you including ${s} in your IDC Library Cost Pool?`,
-        options: [
-          { value: 2, label: "Yes" },
-          { value: 0, label: "No" }
-        ] },
-      { key: "direct", text: () => `Would you consider moving this service to direct charging?`,
-        options: [
-          { value: 2, label: "Yes" },
-          { value: 1, label: "Maybe" },
-          { value: 0, label: "No" }
-        ] }
+      { key: "idc",
+        text: "Do you include the cost of this service in your Library Cost Pool for IDC calculations?" },
+      { key: "costcenter",
+        text: "Do you have an existing cost center, or similar mechanism, that could be directly charged for this service?" },
+      { key: "fa_impact",
+        text: "Would removing this service from the Library Cost Pool and shrinking the base change the F&A rate calculation in a way that helps or hurts overall recovery?" },
+      { key: "phase_in",
+        text: "Is there a phase-in or pilot path to direct charge before a broader implementation?" }
     ]
   }
 };

@@ -129,17 +129,41 @@
 
   function renderHomeProgress() {
     const el = document.getElementById("progress-summary");
-    el.innerHTML = ROLE_ORDER.map((roleId) => {
-      const role = ROLES[roleId];
-      const { answered, total } = roleCompletion(roleId);
-      const pct = Math.round((answered / total) * 100);
-      return `
-        <div class="progress-row">
-          <span class="progress-label" style="color:${role.color}">${role.label}</span>
-          <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${role.color}"></div></div>
-          <span class="progress-count">${answered} / ${total}</span>
-        </div>`;
-    }).join("");
+    el.innerHTML = `
+      <h3 class="progress-summary-title">Assessment status</h3>
+      <div class="progress-cards">` +
+      ROLE_ORDER.map((roleId) => {
+        const role = ROLES[roleId];
+        const { answered, total } = roleCompletion(roleId);
+        const pct = Math.round((answered / total) * 100);
+        const notStarted = answered === 0;
+        const complete = answered === total;
+        const statusLabel = notStarted ? "Not started" : complete ? "Complete" : "In progress";
+        const statusClass = notStarted ? "status-not-started" : complete ? "status-complete" : "status-progress";
+        return `
+          <div class="progress-card" style="border-top-color:${role.color}">
+            <div class="progress-card-top">
+              <div>
+                <p class="progress-card-role" style="color:${role.color}">${role.label}</p>
+                <p class="progress-card-sub">${role.subtitle}</p>
+              </div>
+              <span class="progress-status-badge ${statusClass}">${statusLabel}</span>
+            </div>
+            <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${role.color}"></div></div>
+            <div class="progress-card-foot">
+              <span class="progress-count">${answered} of ${total} services</span>
+              <button class="btn btn-sm" style="border-color:${role.color};color:${role.color}" data-start="${roleId}">
+                ${notStarted ? "Start" : complete ? "Review" : "Continue"} →
+              </button>
+            </div>
+          </div>`;
+      }).join("") +
+    `</div>`;
+
+    // re-bind start buttons since innerHTML replaced them
+    el.querySelectorAll("[data-start]").forEach((btn) => {
+      btn.addEventListener("click", () => openAssessment(btn.dataset.start));
+    });
   }
 
   // ---------- ASSESSMENT ROUTING ----------
@@ -709,6 +733,8 @@
     renderTransparencyOutcome();
     renderExpandOutcome();
     renderLearnMoreOutcome();
+    renderQuickWinsOutcome();
+    renderGapOutcome();
     renderDetailVisual();
   }
 
@@ -803,6 +829,102 @@
         <span class="outcome-item-name">${r.item.name}</span>
         <span style="font-size:11px;color:var(--text-muted);margin-left:6px">${r.tags.join(", ")}</span>
       </li>`).join("") + `</ul>`;
+  }
+
+  function renderQuickWinsOutcome() {
+    const el = document.querySelector("#outcome-quickwins .outcome-body");
+    if (!el) return;
+    const allDone = libraryCompletion().answered > 0 && adminCompletion().answered > 0 && costingCompletion().answered > 0;
+    if (!allDone) {
+      el.innerHTML = `<p class="empty-note">Needs answers from all three teams to identify quick wins.</p>`;
+      return;
+    }
+
+    const wins = [], longterm = [];
+    INVENTORY.forEach((item) => {
+      const lib = (DATA.library || {})[item.id] || {};
+      const adm = (DATA.admin || {})[item.id] || {};
+      const cst = (DATA.costing || {})[item.id] || {};
+
+      if (lib.offers === false) return;
+
+      // Quick win: library tracks cost + admin values it + costing already has a cost center
+      const libTracks = (lib.cost_tracking || 0) >= 1;
+      const adminValues = (adm.value || 0) === 2 && (adm.chargeable || 0) >= 1;
+      const costReady = (cst.costcenter || 0) === 2;
+
+      if (libTracks && adminValues && costReady) {
+        wins.push(item);
+      } else if ((adm.value || 0) === 2 && (!libTracks || !costReady)) {
+        // Valued by admin but needs groundwork
+        const gaps = [];
+        if (!libTracks) gaps.push("cost tracking");
+        if (!costReady) gaps.push("cost center");
+        longterm.push({ item, gaps });
+      }
+    });
+
+    if (!wins.length && !longterm.length) {
+      el.innerHTML = `<p class="empty-note">Not enough data to classify services yet.</p>`;
+      return;
+    }
+
+    let html = "";
+    if (wins.length) {
+      html += `<p class="qw-section-label qw-wins">Quick wins <span class="qw-count">${wins.length}</span></p>
+        <ul class="outcome-list">` +
+        wins.map((s) => `<li><span class="outcome-item-name">${s.name}</span></li>`).join("") +
+        `</ul>`;
+    }
+    if (longterm.length) {
+      html += `<p class="qw-section-label qw-longterm">Needs groundwork <span class="qw-count">${longterm.length}</span></p>
+        <ul class="outcome-list">` +
+        longterm.map((r) => `<li>
+          <span class="outcome-item-name">${r.item.name}</span>
+          <span class="qw-gap-tags">${r.gaps.map((g) => `<span class="tag tag-unknown">${g}</span>`).join("")}</span>
+        </li>`).join("") +
+        `</ul>`;
+    }
+    el.innerHTML = html;
+  }
+
+  function renderGapOutcome() {
+    const el = document.querySelector("#outcome-gap .outcome-body");
+    if (!el) return;
+    const libDone = libraryCompletion().answered > 0;
+    const adminDone = adminCompletion().answered > 0;
+    const costDone = costingCompletion().answered > 0;
+
+    if (!libDone || (!adminDone && !costDone)) {
+      el.innerHTML = `<p class="empty-note">Needs Library answers plus at least one of Research Administration or Institutional Finance/Costing.</p>`;
+      return;
+    }
+
+    const gaps = INVENTORY.filter((item) => {
+      const lib = (DATA.library || {})[item.id] || {};
+      if (lib.offers === false) return false; // not offered — not a hidden investment
+      const libAnswered = ["project_specific","usage_scope","researcher_request","cost_tracking"].some((k) => lib[k] !== undefined);
+      if (!libAnswered) return false;
+
+      const adm = (DATA.admin || {})[item.id] || {};
+      const cst = (DATA.costing || {})[item.id] || {};
+      // Admin doesn't recognise as chargeable AND costing doesn't have it in pool or cost center
+      const adminNotCharging = adminDone && (adm.chargeable || 0) === 0;
+      const costNotRecognised = costDone && (cst.idc || 0) === 0 && (cst.costcenter || 0) === 0;
+      if (adminDone && costDone) return adminNotCharging && costNotRecognised;
+      if (adminDone) return adminNotCharging;
+      return costNotRecognised;
+    });
+
+    if (!gaps.length) {
+      el.innerHTML = `<p class="empty-note">No invisible investments found — all offered services are recognized by research administration or costing.</p>`;
+      return;
+    }
+
+    el.innerHTML = `<p class="gap-intro">Library offers these services but they are not currently recognized as billable or poolable by the other teams:</p>
+      <ul class="outcome-list">` +
+      gaps.map((item) => `<li><span class="outcome-item-name">${item.name}</span></li>`).join("") +
+      `</ul>`;
   }
 
   const VALUE_COLOR = { 2: "#1F87A6", 1: "#C9941F", 0: "#E6394A" };

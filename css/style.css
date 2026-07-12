@@ -161,11 +161,31 @@ body {
 
 /* ---------- progress summary (home) ---------- */
 .progress-summary { margin-bottom: 32px; }
-.progress-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-.progress-label { width: 180px; font-size: 13px; font-weight: 700; }
-.progress-track { flex: 1; height: 8px; background: var(--border); border-radius: 6px; overflow: hidden; }
-.progress-fill { height: 100%; border-radius: 6px; transition: width .2s; }
-.progress-count { width: 56px; text-align: right; font-size: 13px; color: var(--text-muted); }
+.progress-summary-title { margin: 0 0 14px; font-size: 15px; font-weight: 700; color: var(--navy); }
+.progress-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.progress-card {
+  background: var(--card-bg); border: 1px solid var(--border); border-top: 3px solid var(--border);
+  border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow);
+}
+.progress-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+.progress-card-role { margin: 0 0 2px; font-size: 13px; font-weight: 700; }
+.progress-card-sub { margin: 0; font-size: 11.5px; color: var(--text-muted); line-height: 1.35; }
+.progress-status-badge {
+  font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 999px; white-space: nowrap; flex-shrink: 0;
+}
+.status-not-started { background: #f0f0f0; color: var(--text-muted); }
+.status-progress { background: #FFF3D6; color: #8a5f00; }
+.status-complete { background: #E3F5ED; color: #1a6e3e; }
+.progress-track { height: 6px; background: var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 12px; }
+.progress-fill { height: 100%; border-radius: 6px; transition: width .3s; }
+.progress-card-foot { display: flex; justify-content: space-between; align-items: center; }
+.progress-count { font-size: 12px; color: var(--text-muted); }
+.btn-sm {
+  font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 6px;
+  background: transparent; border: 1.5px solid; cursor: pointer; transition: background .15s;
+}
+.btn-sm:hover { background: var(--bg); }
 
 /* ---------- share box ---------- */
 .share-box {
@@ -409,6 +429,20 @@ body {
   .progress-pill { margin-left: 0; }
   .tabnav-bar { overflow-x: auto; }
 }
+
+/* ---------- quick wins / gap analysis outcome sections ---------- */
+.qw-section-label {
+  margin: 14px 0 6px; font-size: 12px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; display: flex; align-items: center; gap: 8px;
+}
+.qw-wins { color: #1a6e3e; }
+.qw-longterm { color: #8a5f00; }
+.qw-count {
+  font-size: 11px; font-weight: 700; padding: 1px 7px;
+  border-radius: 999px; background: var(--bg); color: var(--text-muted);
+}
+.qw-gap-tags { display: inline-flex; gap: 4px; margin-left: 8px; flex-wrap: wrap; }
+.gap-intro { margin: 0 0 10px; font-size: 13px; color: var(--text-muted); }
 
 /* ---------- print (PDF export of outcomes) ---------- */
 @media print {

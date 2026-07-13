@@ -1118,12 +1118,6 @@
           <span class="detail-legend-item"><span class="vchip" style="background:#E6394A"></span>No / caution</span>
           <span class="detail-legend-item"><span class="vchip vchip-empty">&middot;</span>Not yet answered</span>
         </div>
-        <div class="detail-legend-section">
-          <span class="detail-legend-title">Alignment dots</span>
-          <span class="detail-legend-item"><span class="align-dot" style="background:#52733E;display:inline-block"></span>All 3 teams</span>
-          <span class="detail-legend-item"><span class="align-dot" style="background:#C9941F;display:inline-block"></span>1–2 teams</span>
-          <span class="detail-legend-item"><span class="align-dot align-dot-off" style="display:inline-block"></span>None yet</span>
-        </div>
       </div>
 
       <div class="detail-rows">

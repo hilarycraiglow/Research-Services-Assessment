@@ -483,11 +483,19 @@ body {
 .threshold-radio-row { display: flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; }
 .threshold-radio-row input[type="radio"] { accent-color: var(--teal); width: 15px; height: 15px; }
 .threshold-text-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
-.threshold-text-input {
-  width: 100%; max-width: 420px; padding: 8px 12px; border: 1px solid var(--border);
-  border-radius: 7px; font-size: 14px; color: var(--text); background: var(--card-bg);
+.threshold-input-wrap {
+  display: flex; align-items: center; max-width: 420px;
+  border: 1px solid var(--border); border-radius: 7px; background: var(--card-bg); overflow: hidden;
 }
-.threshold-text-input:focus { outline: 2px solid var(--teal); border-color: transparent; }
+.threshold-dollar {
+  padding: 8px 10px 8px 12px; font-size: 14px; font-weight: 600; color: var(--text-muted);
+  background: var(--bg); border-right: 1px solid var(--border); flex-shrink: 0;
+}
+.threshold-text-input {
+  flex: 1; padding: 8px 12px; border: none; outline: none;
+  font-size: 14px; color: var(--text); background: transparent;
+}
+.threshold-input-wrap:focus-within { outline: 2px solid var(--teal); }
 
 /* ---------- detail key grid ---------- */
 .detail-intro { margin: 0 0 16px; font-size: 13.5px; color: var(--text-muted); line-height: 1.55; }
@@ -499,6 +507,16 @@ body {
 .detail-key-head { margin: 0 0 8px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
 .detail-key-item { margin: 0 0 4px; font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
 .detail-key-item .vchip { flex-shrink: 0; }
+
+/* ---------- learn more colorful tags ---------- */
+.learnmore-tag {
+  display: inline-block; padding: 2px 9px; border-radius: 10px; color: #fff;
+  font-size: 11px; font-weight: 600; margin-left: 6px; vertical-align: middle;
+}
+
+/* ---------- detail threshold section ---------- */
+.detail-threshold-section { margin-bottom: 28px; }
+.detail-threshold-heading { margin: 0 0 10px; font-size: 15px; font-weight: 700; color: var(--navy); }
 
 /* ---------- alignment dots ---------- */
 .align-bar {

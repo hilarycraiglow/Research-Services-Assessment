@@ -249,7 +249,7 @@
     nameDiv.className = "lib-offer-name";
     nameDiv.innerHTML = `<span class="lib-item-title">${item.name}</span>`;
     if (!offered) {
-      nameDiv.innerHTML += ` <span class="not-offered-badge">Not offered — questions skipped</span>`;
+      nameDiv.innerHTML += ` <span class="not-offered-badge">Not offered</span>`;
     }
 
     offerRow.appendChild(cb);
@@ -366,17 +366,24 @@
         const textLabel = document.createElement("label");
         textLabel.className = "threshold-text-label";
         textLabel.textContent = q.textInputLabel;
+        const inputWrap = document.createElement("div");
+        inputWrap.className = "threshold-input-wrap";
+        const dollarPrefix = document.createElement("span");
+        dollarPrefix.className = "threshold-dollar";
+        dollarPrefix.textContent = "$";
         const textInput = document.createElement("input");
         textInput.type = "text";
         textInput.className = "threshold-text-input";
-        textInput.placeholder = "e.g. $5,000 per year";
+        textInput.placeholder = "e.g. 5,000 per year";
         textInput.value = tData[q.textInputKey] || "";
         textInput.addEventListener("input", () => {
           tData[q.textInputKey] = textInput.value;
           saveData();
         });
+        inputWrap.appendChild(dollarPrefix);
+        inputWrap.appendChild(textInput);
         body.appendChild(textLabel);
-        body.appendChild(textInput);
+        body.appendChild(inputWrap);
 
         section.appendChild(body);
         container.appendChild(section);
@@ -537,7 +544,7 @@
   const ADMIN_QUESTIONS = [
     { key: "compliance", text: "Which of the following library services help satisfy grant compliance requirements? Select all that apply." },
     { key: "value",      text: "Which of the following library services are essential to your institution's research strategy? Select all that apply." },
-    { key: "chargeable", text: "If there were an allocable, documented per project cost for this service, would your PIs be open to direct charging this service to keep it sustainable? Select all that apply." }
+    { key: "chargeable", text: "If there were an allocable, documented per project cost for this service, would your PIs be open to direct charging grants to keep the service sustainable for the institution? Select all that apply." }
   ];
 
   function renderAdminAssessment() {
@@ -817,11 +824,12 @@
       const lib = libAnswers(item.id);
       const cost = costAnswers(item.id);
       if (!lib || !cost) return null;
-      // Library score: project-specificity + researcher demand + cost tracking readiness
-      const libScore = (lib.project_specific || 0) + (lib.researcher_request || 0) + (lib.cost_tracking || 0);
-      // Costing appetite: has a cost center + phase-in path available
-      const costScore = (cost.costcenter || 0) + (cost.phase_in || 0);
-      const total = libScore + costScore;
+      const adm = adminAnswers(item.id) || {};
+      // Library can isolate cost + Admin values it + Costing open to direct charging
+      const libScore = (lib.cost_tracking || 0);     // 0-2
+      const admScore = (adm.value || 0);             // 0-2
+      const costScore = (cost.costcenter || 0);      // 0-2
+      const total = libScore + admScore + costScore; // max 6
       return { item, total };
     }).filter(Boolean).sort((a, b) => b.total - a.total);
 
@@ -833,8 +841,8 @@
     el.innerHTML = `<ol class="outcome-list">` + ranked.slice(0, 8).map((r) => `
       <li>
         <span class="outcome-item-name">${r.item.name}</span>
-        <span class="outcome-meter"><span class="outcome-meter-fill" style="width:${(r.total / 8) * 100}%;background:#1F87A6"></span></span>
-        <span class="outcome-score">${r.total}/8</span>
+        <span class="outcome-meter"><span class="outcome-meter-fill" style="width:${(r.total / 6) * 100}%;background:#52733E"></span></span>
+        <span class="outcome-score">${r.total}/6</span>
       </li>`).join("") + `</ol>`;
   }
 
@@ -912,10 +920,11 @@
       el.innerHTML = `<p class="empty-note">No services selected yet — Research Administration and Institutional Finance/Costing can each flag services for follow-up in the optional section at the end of their assessment.</p>`;
       return;
     }
+    const tagColors = { "Research Admin": ROLES.admin.color, "Costing": ROLES.costing.color };
     el.innerHTML = `<ul class="outcome-list">` + items.map((r) => `
       <li>
         <span class="outcome-item-name">${r.item.name}</span>
-        <span style="font-size:11px;color:var(--text-muted);margin-left:6px">${r.tags.join(", ")}</span>
+        ${r.tags.map((t) => `<span class="learnmore-tag" style="background:${tagColors[t]}">${t}</span>`).join("")}
       </li>`).join("") + `</ul>`;
   }
 
@@ -1015,7 +1024,7 @@
       `</ul>`;
   }
 
-  const VALUE_COLOR = { 2: "#1F87A6", 1: "#C9941F", 0: "#E6394A" };
+  const VALUE_COLOR = { 2: "#52733E", 1: "#C9941F", 0: "#E6394A" };
 
   function chip(value, label) {
     if (value === undefined) return `<span class="vchip vchip-empty" title="No answer yet">&middot;</span>`;
@@ -1036,27 +1045,25 @@
     let score = 0;
     if (!notOffered && (libA.cost_tracking || 0) >= 1) score++;
     if ((adminA.value || 0) === 2 && (adminA.chargeable || 0) >= 1) score++;
-    if (((costA.idc || 0) === 2 || (costA.costcenter || 0) === 2) && !(costA.inconsistency === 2)) score++;
+    if (((costA.idc || 0) === 2 || (costA.costcenter || 0) === 2) && costA.inconsistency !== 0) score++;
     return score;
   }
 
   function alignmentBar(score, libA, adminA, costA, notOffered) {
     const libReady = !notOffered && (libA.cost_tracking || 0) >= 1;
     const adminReady = (adminA.value || 0) === 2 && (adminA.chargeable || 0) >= 1;
-    const costReady = ((costA.idc || 0) === 2 || (costA.costcenter || 0) === 2) && !(costA.inconsistency === 2);
+    const costReady = ((costA.idc || 0) === 2 || (costA.costcenter || 0) === 2) && costA.inconsistency !== 0;
 
-    const dot = (ready, color, label) =>
+    const dotColor = score === 3 ? '#52733E' : score >= 1 ? '#C9941F' : '#d0d7df';
+
+    const dot = (ready, roleLabel) =>
       `<span class="align-dot ${ready ? 'align-dot-on' : 'align-dot-off'}"
-        style="${ready ? `background:${color}` : ''}" title="${label}: ${ready ? 'aligned' : 'not yet aligned'}"></span>`;
-
-    const labelMap = { 0: 'No alignment yet', 1: 'One team ready', 2: 'Two teams aligned', 3: 'Full alignment' };
-    const colorMap = { 0: '#aaa', 1: '#C9941F', 2: '#52733E', 3: '#1F87A6' };
+        style="${ready ? `background:${dotColor}` : ''}" title="${roleLabel}: ${ready ? 'interested' : 'not yet'}"></span>`;
 
     return `<div class="align-bar">
-      ${dot(libReady, ROLES.library.color, 'Library')}
-      ${dot(adminReady, ROLES.admin.color, 'Research Admin')}
-      ${dot(costReady, ROLES.costing.color, 'Finance/Costing')}
-      <span class="align-label" style="color:${colorMap[score]}">${labelMap[score]}</span>
+      ${dot(libReady, 'Library')}
+      ${dot(adminReady, 'Research Admin')}
+      ${dot(costReady, 'Finance/Costing')}
     </div>`;
   }
 
@@ -1077,26 +1084,20 @@
     const thresholdText = thresholdData.threshold_text || "";
     const thresholdLabels = { 2: "Yes", 1: "Depends", 0: "No" };
     const thresholdNote = thresholdValue !== undefined
-      ? `<strong>${thresholdLabels[thresholdValue]}</strong>${thresholdText ? ` — ${thresholdText}` : ""}`
+      ? `<strong>${thresholdLabels[thresholdValue]}</strong>${thresholdText ? ` — $${thresholdText}` : ""}`
       : `<em>Not yet answered</em>`;
 
     el.innerHTML = `
+      <div class="detail-threshold-section">
+        <h3 class="detail-threshold-heading">Finance/Costing Threshold</h3>
+        <div class="detail-threshold-box">
+          <p class="detail-threshold-label">Threshold for moving a service from IDC to direct charging:</p>
+          <p class="detail-threshold-value">${thresholdNote}</p>
+        </div>
+      </div>
+
       <h3>Full Detail by Service</h3>
-
-      <div class="detail-threshold-box">
-        <p class="detail-threshold-label">Finance/Costing — Threshold for moving a service from IDC to direct charging:</p>
-        <p class="detail-threshold-value">${thresholdNote}</p>
-      </div>
-
-      <p class="detail-intro">Each service is shown with its full description, how each team answered, and an alignment indicator showing whether all three teams are signaling readiness for a cost-recovery conversation about that service. Services are sorted by alignment — fully aligned services appear first.</p>
-
-      <div class="align-legend">
-        <strong>Alignment indicator:</strong>
-        <span class="align-dot align-dot-on" style="background:${ROLES.library.color}" title="Library"></span> Library &nbsp;
-        <span class="align-dot align-dot-on" style="background:${ROLES.admin.color}" title="Research Admin"></span> Research Admin &nbsp;
-        <span class="align-dot align-dot-on" style="background:${ROLES.costing.color}" title="Finance/Costing"></span> Finance/Costing &nbsp;
-        <span class="align-dot align-dot-off" title="Not yet aligned"></span> Not yet aligned
-      </div>
+      <p class="detail-intro">Each service is shown with its full description, how each team answered, and an alignment indicator showing which teams signal interest in exploring further. Services are sorted by the highest interest in exploring further.</p>
 
       <div class="detail-rows">
         ${rows.map((r) => `
@@ -1113,7 +1114,7 @@
               <div class="detail-group">
                 <span class="detail-group-label" style="color:${ROLES.library.color}">Library</span>
                 ${r.notOffered
-                  ? '<span class="detail-not-offered">Not offered — questions skipped</span>'
+                  ? '<span class="detail-not-offered">Not offered</span>'
                   : `<div class="detail-q-list">
                       <div class="detail-q-item">${chip(r.libA.project_specific, "Can be identified for a specific project")}<span>Can be identified for a specific project</span></div>
                       <div class="detail-q-item">${chip(r.libA.usage_scope, "Used by all/most sponsored projects")}<span>Used by all/most sponsored projects</span></div>
@@ -1126,7 +1127,7 @@
                 <div class="detail-q-list">
                   <div class="detail-q-item">${chip(r.adminA.compliance, "Helps satisfy grant compliance")}<span>Helps satisfy grant compliance requirements</span></div>
                   <div class="detail-q-item">${chip(r.adminA.value, "Essential to research strategy")}<span>Essential to the institution's research strategy</span></div>
-                  <div class="detail-q-item">${chip(r.adminA.chargeable, "PIs open to direct charging")}<span>PIs would be open to direct charging to keep it sustainable</span></div>
+                  <div class="detail-q-item">${chip(r.adminA.chargeable, "PIs open to direct charging")}<span>PIs open to direct charging grants to keep it sustainable</span></div>
                   <div class="detail-q-item">${learnMoreChip(r.item.id)}<span>Flagged: wants to learn more from the library</span></div>
                 </div>
               </div>
@@ -1135,8 +1136,8 @@
                 <div class="detail-q-list">
                   <div class="detail-q-item">${chip(r.costA.idc, "In Library Cost Pool for IDC")}<span>Included in Library Cost Pool for IDC calculations</span></div>
                   <div class="detail-q-item">${chip(r.costA.costcenter, "Cost center available")}<span>Existing cost center available to direct charge departments or grants</span></div>
-                  <div class="detail-q-item">${chip(r.costA.inconsistency, "Inconsistency flagged")}<span>Direct charging would create inconsistency with similar costs elsewhere</span></div>
-                  <div class="detail-q-item">${r.costA.learnmore ? `<span class="vchip" style="background:#1F87A6" title="Wants to learn more"></span>` : `<span class="vchip vchip-empty">&middot;</span>`}<span>Flagged: wants to learn more from the library</span></div>
+                  <div class="detail-q-item">${chip(r.costA.inconsistency, "No inconsistency with similar costs")}<span>Direct charging would not create inconsistency with similar costs elsewhere</span></div>
+                  <div class="detail-q-item">${r.costA.learnmore ? `<span class="vchip" style="background:${ROLES.costing.color}" title="Wants to learn more"></span>` : `<span class="vchip vchip-empty">&middot;</span>`}<span>Flagged: wants to learn more from the library</span></div>
                 </div>
               </div>
             </div>

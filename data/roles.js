@@ -70,7 +70,7 @@ const ROLES = {
       { key: "costcenter",
         text: "Do you have an existing cost center, or similar mechanism, that could be used to direct charge departments or grants for this service?" },
       { key: "inconsistency",
-        text: "Check the box if direct charging for this service would create inconsistency with how similar costs are treated elsewhere at the institution." },
+        text: "Check the box if direct charging for this service would not create inconsistency with similar costs elsewhere at the institution." },
       { key: "threshold",
         text: "Do you have a threshold amount to consider moving a library service from the IDC to direct charging?",
         options: [

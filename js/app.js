@@ -800,8 +800,6 @@
     renderTransparencyOutcome();
     renderExpandOutcome();
     renderLearnMoreOutcome();
-    renderQuickWinsOutcome();
-    renderGapOutcome();
     renderDetailVisual();
   }
 
@@ -873,14 +871,14 @@
     let html = "";
 
     if (alreadyStrong.length) {
-      html += `<p class="expand-section-label expand-offered">Already offered &amp; valued by research administration</p>
+      html += `<p class="expand-section-label expand-offered">Services Offered and Highly Valued by Research Administrators</p>
         <ul class="outcome-list">` +
         alreadyStrong.map((s) => `<li><span class="outcome-item-name">${s.name}</span></li>`).join("") +
         `</ul>`;
     }
 
     if (toExpand.length) {
-      html += `<p class="expand-section-label expand-start" style="margin-top:${alreadyStrong.length ? "16px" : "0"}">Services to expand or start — valued by research administration</p>
+      html += `<p class="expand-section-label expand-start" style="margin-top:${alreadyStrong.length ? "16px" : "0"}">Services to Expand or Start | Valued by Research Administration</p>
         <ol class="outcome-list">` +
         toExpand.slice(0, 8).map((r) => `
           <li>
@@ -1030,6 +1028,38 @@
     return `<span class="vchip" style="background:#52733E" title="Wants to learn more"></span>`;
   }
 
+  // Alignment score: how many of the three teams signal this service is ready for cost discussion.
+  // Library: offers it AND tracks cost (cost_tracking >= 1)
+  // Admin: marks it essential (value=2) AND open to charging (chargeable >= 1)
+  // Costing: has it in IDC pool OR has a cost center, AND no inconsistency flagged
+  function alignmentScore(libA, adminA, costA, notOffered) {
+    let score = 0;
+    if (!notOffered && (libA.cost_tracking || 0) >= 1) score++;
+    if ((adminA.value || 0) === 2 && (adminA.chargeable || 0) >= 1) score++;
+    if (((costA.idc || 0) === 2 || (costA.costcenter || 0) === 2) && !(costA.inconsistency === 2)) score++;
+    return score;
+  }
+
+  function alignmentBar(score, libA, adminA, costA, notOffered) {
+    const libReady = !notOffered && (libA.cost_tracking || 0) >= 1;
+    const adminReady = (adminA.value || 0) === 2 && (adminA.chargeable || 0) >= 1;
+    const costReady = ((costA.idc || 0) === 2 || (costA.costcenter || 0) === 2) && !(costA.inconsistency === 2);
+
+    const dot = (ready, color, label) =>
+      `<span class="align-dot ${ready ? 'align-dot-on' : 'align-dot-off'}"
+        style="${ready ? `background:${color}` : ''}" title="${label}: ${ready ? 'aligned' : 'not yet aligned'}"></span>`;
+
+    const labelMap = { 0: 'No alignment yet', 1: 'One team ready', 2: 'Two teams aligned', 3: 'Full alignment' };
+    const colorMap = { 0: '#aaa', 1: '#C9941F', 2: '#52733E', 3: '#1F87A6' };
+
+    return `<div class="align-bar">
+      ${dot(libReady, ROLES.library.color, 'Library')}
+      ${dot(adminReady, ROLES.admin.color, 'Research Admin')}
+      ${dot(costReady, ROLES.costing.color, 'Finance/Costing')}
+      <span class="align-label" style="color:${colorMap[score]}">${labelMap[score]}</span>
+    </div>`;
+  }
+
   function renderDetailVisual() {
     const el = document.getElementById("results-detail");
     const rows = INVENTORY.map((item) => {
@@ -1037,62 +1067,77 @@
       const adminA = adminAnswers(item.id) || {};
       const costA = costAnswers(item.id) || {};
       const notOffered = libA.offers === false;
-      return { item, libA, adminA, costA, notOffered };
-    });
+      const score = alignmentScore(libA, adminA, costA, notOffered);
+      return { item, libA, adminA, costA, notOffered, score };
+    }).sort((a, b) => b.score - a.score); // highest alignment first
+
+    // Costing Q4 threshold — institution-level, not per service
+    const thresholdData = (DATA.costing || {})._threshold || {};
+    const thresholdValue = thresholdData.threshold;
+    const thresholdText = thresholdData.threshold_text || "";
+    const thresholdLabels = { 2: "Yes", 1: "Depends", 0: "No" };
+    const thresholdNote = thresholdValue !== undefined
+      ? `<strong>${thresholdLabels[thresholdValue]}</strong>${thresholdText ? ` — ${thresholdText}` : ""}`
+      : `<em>Not yet answered</em>`;
 
     el.innerHTML = `
-      <h3>Full detail by service</h3>
-      <p class="detail-intro">Each row shows one service and how each team answered. Colored dots summarize the response — hover for the specific question. The three columns correspond to the three perspectives: what the library knows about the service's cost structure, what research administration says about its value and chargeability, and what finance/costing says about its infrastructure and pool status.</p>
-      <div class="detail-key-grid">
-        <div class="detail-key-group">
-          <p class="detail-key-head" style="color:${ROLES.library.color}">Library indicators</p>
-          <p class="detail-key-item"><span class="vchip" style="background:${VALUE_COLOR[2]}"></span> Can be identified for a specific project</p>
-          <p class="detail-key-item"><span class="vchip" style="background:${VALUE_COLOR[2]}"></span> Used by all/most sponsored projects</p>
-          <p class="detail-key-item"><span class="vchip" style="background:${VALUE_COLOR[2]}"></span> Requested by researchers for specific project needs</p>
-          <p class="detail-key-item"><span class="vchip" style="background:${VALUE_COLOR[2]}"></span> Library already tracks cost or effort per project</p>
-        </div>
-        <div class="detail-key-group">
-          <p class="detail-key-head" style="color:${ROLES.admin.color}">Research Administration indicators</p>
-          <p class="detail-key-item"><span class="vchip" style="background:${VALUE_COLOR[2]}"></span> Essential to the institution's research strategy</p>
-          <p class="detail-key-item"><span class="vchip" style="background:${VALUE_COLOR[2]}"></span> Helps satisfy grant compliance requirements</p>
-          <p class="detail-key-item"><span class="vchip" style="background:${VALUE_COLOR[2]}"></span> PIs would be open to direct charging</p>
-          <p class="detail-key-item"><span class="vchip" style="background:#52733E"></span> Team flagged as wanting to learn more</p>
-        </div>
-        <div class="detail-key-group">
-          <p class="detail-key-head" style="color:${ROLES.costing.color}">Finance/Costing indicators</p>
-          <p class="detail-key-item"><span class="vchip" style="background:${VALUE_COLOR[2]}"></span> Included in Library Cost Pool for IDC calculations</p>
-          <p class="detail-key-item"><span class="vchip" style="background:${VALUE_COLOR[2]}"></span> Existing cost center available for direct charging</p>
-          <p class="detail-key-item"><span class="vchip" style="background:${VALUE_COLOR[0]}"></span> Direct charging would create inconsistency (flagged)</p>
-          <p class="detail-key-item"><span class="vchip" style="background:#1F87A6"></span> Team flagged as wanting to learn more</p>
-        </div>
+      <h3>Full Detail by Service</h3>
+
+      <div class="detail-threshold-box">
+        <p class="detail-threshold-label">Finance/Costing — Threshold for moving a service from IDC to direct charging:</p>
+        <p class="detail-threshold-value">${thresholdNote}</p>
       </div>
-      <p class="detail-legend">
-        <span class="vchip" style="background:${VALUE_COLOR[2]}"></span> Yes / selected &nbsp;
-        <span class="vchip" style="background:${VALUE_COLOR[1]}"></span> Partial / depends &nbsp;
-        <span class="vchip" style="background:${VALUE_COLOR[0]}"></span> No / not selected &nbsp;
-        <span class="vchip vchip-empty">&middot;</span> Not answered
-      </p>
+
+      <p class="detail-intro">Each service is shown with its full description, how each team answered, and an alignment indicator showing whether all three teams are signaling readiness for a cost-recovery conversation about that service. Services are sorted by alignment — fully aligned services appear first.</p>
+
+      <div class="align-legend">
+        <strong>Alignment indicator:</strong>
+        <span class="align-dot align-dot-on" style="background:${ROLES.library.color}" title="Library"></span> Library &nbsp;
+        <span class="align-dot align-dot-on" style="background:${ROLES.admin.color}" title="Research Admin"></span> Research Admin &nbsp;
+        <span class="align-dot align-dot-on" style="background:${ROLES.costing.color}" title="Finance/Costing"></span> Finance/Costing &nbsp;
+        <span class="align-dot align-dot-off" title="Not yet aligned"></span> Not yet aligned
+      </div>
+
       <div class="detail-rows">
         ${rows.map((r) => `
-          <div class="detail-row">
-            <div class="detail-row-name">${r.item.name}${r.notOffered ? ' <span class="tag tag-unknown">Not offered</span>' : ''}</div>
+          <div class="detail-row detail-row-v2">
+            <div class="detail-row-header">
+              <div class="detail-row-title">
+                <span class="detail-row-name-text">${r.item.name}</span>
+                ${r.notOffered ? ' <span class="tag tag-unknown">Not offered</span>' : ''}
+              </div>
+              ${alignmentBar(r.score, r.libA, r.adminA, r.costA, r.notOffered)}
+            </div>
+            <p class="detail-row-desc">${r.item.desc}</p>
             <div class="detail-row-groups">
               <div class="detail-group">
                 <span class="detail-group-label" style="color:${ROLES.library.color}">Library</span>
                 ${r.notOffered
                   ? '<span class="detail-not-offered">Not offered — questions skipped</span>'
-                  : chip(r.libA.project_specific, "Can be identified for a specific project") +
-                    chip(r.libA.usage_scope, "Used by all/most sponsored projects") +
-                    chip(r.libA.researcher_request, "Requested by researchers for specific needs") +
-                    chip(r.libA.cost_tracking, "Library tracks cost or effort per project")}
+                  : `<div class="detail-q-list">
+                      <div class="detail-q-item">${chip(r.libA.project_specific, "Can be identified for a specific project")}<span>Can be identified for a specific project</span></div>
+                      <div class="detail-q-item">${chip(r.libA.usage_scope, "Used by all/most sponsored projects")}<span>Used by all/most sponsored projects</span></div>
+                      <div class="detail-q-item">${chip(r.libA.researcher_request, "Requested by researchers for specific needs")}<span>Requested by researchers for specific project needs</span></div>
+                      <div class="detail-q-item">${chip(r.libA.cost_tracking, "Library tracks cost or effort per project")}<span>Library already tracks cost or effort per project</span></div>
+                    </div>`}
               </div>
               <div class="detail-group">
                 <span class="detail-group-label" style="color:${ROLES.admin.color}">Research Admin</span>
-                ${chip(r.adminA.compliance, "Helps satisfy grant compliance")}${chip(r.adminA.value, "Essential to research strategy")}${chip(r.adminA.chargeable, "PIs open to direct charging")}${learnMoreChip(r.item.id)}
+                <div class="detail-q-list">
+                  <div class="detail-q-item">${chip(r.adminA.compliance, "Helps satisfy grant compliance")}<span>Helps satisfy grant compliance requirements</span></div>
+                  <div class="detail-q-item">${chip(r.adminA.value, "Essential to research strategy")}<span>Essential to the institution's research strategy</span></div>
+                  <div class="detail-q-item">${chip(r.adminA.chargeable, "PIs open to direct charging")}<span>PIs would be open to direct charging to keep it sustainable</span></div>
+                  <div class="detail-q-item">${learnMoreChip(r.item.id)}<span>Flagged: wants to learn more from the library</span></div>
+                </div>
               </div>
               <div class="detail-group">
                 <span class="detail-group-label" style="color:${ROLES.costing.color}">Finance/Costing</span>
-                ${chip(r.costA.idc, "In Library Cost Pool for IDC")}${chip(r.costA.costcenter, "Cost center available for direct charging")}${chip(r.costA.inconsistency, "Direct charging creates inconsistency (flagged)")}${r.costA.learnmore ? `<span class="vchip" style="background:#1F87A6" title="Finance/Costing wants to learn more"></span>` : ''}
+                <div class="detail-q-list">
+                  <div class="detail-q-item">${chip(r.costA.idc, "In Library Cost Pool for IDC")}<span>Included in Library Cost Pool for IDC calculations</span></div>
+                  <div class="detail-q-item">${chip(r.costA.costcenter, "Cost center available")}<span>Existing cost center available to direct charge departments or grants</span></div>
+                  <div class="detail-q-item">${chip(r.costA.inconsistency, "Inconsistency flagged")}<span>Direct charging would create inconsistency with similar costs elsewhere</span></div>
+                  <div class="detail-q-item">${r.costA.learnmore ? `<span class="vchip" style="background:#1F87A6" title="Wants to learn more"></span>` : `<span class="vchip vchip-empty">&middot;</span>`}<span>Flagged: wants to learn more from the library</span></div>
+                </div>
               </div>
             </div>
           </div>`).join("")}

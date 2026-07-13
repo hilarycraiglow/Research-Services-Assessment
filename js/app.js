@@ -213,6 +213,7 @@
       section.classList.add("open");
       container.appendChild(section);
     });
+    appendFinishBanner(container, ROLES[roleId].label);
     updateAssessmentProgress(roleId);
   }
 
@@ -299,6 +300,25 @@
     return card;
   }
 
+  // Shared: append a finish/submit banner at the bottom of an assessment container
+  function appendFinishBanner(container, roleLabel) {
+    const banner = document.createElement("div");
+    banner.className = "finish-banner";
+    banner.innerHTML = `
+      <div class="finish-banner-copy">
+        <p class="finish-banner-title">You're done with the ${roleLabel} section</p>
+        <p class="finish-banner-sub">Your answers are saved automatically. Head to Outcomes to see combined results, or use the share link above to bring in the other teams.</p>
+      </div>
+      <div class="finish-banner-actions">
+        <button class="btn btn-cta finish-btn" data-goto="results">View Outcomes &rarr;</button>
+        <button class="btn btn-outline finish-btn-home" data-goto="home">Back to Home</button>
+      </div>`;
+    banner.querySelectorAll("[data-goto]").forEach((btn) => {
+      btn.addEventListener("click", () => showView(btn.dataset.goto));
+    });
+    container.appendChild(banner);
+  }
+
   // Costing assessment: question-by-question checkbox format (mirrors admin layout)
   function renderCostingAssessment() {
     DATA.costing = DATA.costing || {};
@@ -317,6 +337,51 @@
 
       const body = document.createElement("div");
       body.className = "cat-body admin-q-body";
+
+      // Q4 (threshold): institution-level radio + text, not per-service checkboxes
+      if (q.hasTextInput) {
+        DATA.costing._threshold = DATA.costing._threshold || {};
+        const tData = DATA.costing._threshold;
+
+        const radioWrap = document.createElement("div");
+        radioWrap.className = "threshold-radios";
+        q.options.forEach((opt) => {
+          const lbl = document.createElement("label");
+          lbl.className = "threshold-radio-row";
+          const rb = document.createElement("input");
+          rb.type = "radio";
+          rb.name = "threshold-q";
+          rb.value = opt.value;
+          rb.checked = tData[q.key] === opt.value;
+          rb.addEventListener("change", () => {
+            tData[q.key] = opt.value;
+            saveData();
+          });
+          lbl.appendChild(rb);
+          lbl.appendChild(document.createTextNode(" " + opt.label));
+          radioWrap.appendChild(lbl);
+        });
+        body.appendChild(radioWrap);
+
+        const textLabel = document.createElement("label");
+        textLabel.className = "threshold-text-label";
+        textLabel.textContent = q.textInputLabel;
+        const textInput = document.createElement("input");
+        textInput.type = "text";
+        textInput.className = "threshold-text-input";
+        textInput.placeholder = "e.g. $5,000 per year";
+        textInput.value = tData[q.textInputKey] || "";
+        textInput.addEventListener("input", () => {
+          tData[q.textInputKey] = textInput.value;
+          saveData();
+        });
+        body.appendChild(textLabel);
+        body.appendChild(textInput);
+
+        section.appendChild(body);
+        container.appendChild(section);
+        return;
+      }
 
       const selectAllBtn = document.createElement("button");
       selectAllBtn.type = "button";
@@ -454,6 +519,7 @@
     learnSection.appendChild(learnBody);
     container.appendChild(learnSection);
 
+    appendFinishBanner(container, ROLES.costing.label);
     updateCostingProgress();
   }
 
@@ -469,9 +535,9 @@
 
   // ---------- ADMIN ASSESSMENT (question-by-question, grouped by lifecycle) ----------
   const ADMIN_QUESTIONS = [
-    { key: "value",      text: "Which of the following services are valuable to your institution's research strategy? Select all that apply." },
-    { key: "compliance", text: "Which of the following services helps satisfy grant compliance requirements? Select all that apply." },
-    { key: "chargeable", text: "If there were an allocable, documented per project cost for this service, would you be open to direct charging this service? Select all that apply." }
+    { key: "compliance", text: "Which of the following library services help satisfy grant compliance requirements? Select all that apply." },
+    { key: "value",      text: "Which of the following library services are essential to your institution's research strategy? Select all that apply." },
+    { key: "chargeable", text: "If there were an allocable, documented per project cost for this service, would your PIs be open to direct charging this service to keep it sustainable? Select all that apply." }
   ];
 
   function renderAdminAssessment() {
@@ -639,6 +705,7 @@
     learnSection.appendChild(learnBody);
     container.appendChild(learnSection);
 
+    appendFinishBanner(container, ROLES.admin.label);
     updateAdminProgress();
   }
 
@@ -783,29 +850,52 @@
       return;
     }
 
-    const ranked = INVENTORY.map((item) => {
+    // Services library offers AND research admin values highly
+    const alreadyStrong = libDone ? INVENTORY.filter((item) => {
+      const admin = adminAnswers(item.id);
+      const libA = (DATA.library || {})[item.id];
+      if (!admin) return false;
+      const libOffers = !libA ? null : libA.offers !== false;
+      return libOffers === true && admin.value === 2;
+    }) : [];
+
+    // Services admin values that the library does NOT currently offer
+    const toExpand = INVENTORY.map((item) => {
       const admin = adminAnswers(item.id);
       if (!admin) return null;
-      // Check if library offers this service (if library has answered)
       const libA = (DATA.library || {})[item.id];
       const libOffers = !libA ? null : libA.offers !== false;
-      if (libOffers === true) return null; // already offered — not an expand/start candidate
+      if (libOffers === true) return null;
       const adminScore = admin.value + admin.compliance + admin.chargeable;
-      const status = !libDone ? "Unknown" : "Start";
-      return { item, adminScore, status };
+      return { item, adminScore };
     }).filter(Boolean).sort((a, b) => b.adminScore - a.adminScore);
 
-    if (!ranked.length) {
-      el.innerHTML = `<p class="empty-note">No expansion gaps found — the library already offers the services research administration values most.</p>`;
-      return;
+    let html = "";
+
+    if (alreadyStrong.length) {
+      html += `<p class="expand-section-label expand-offered">Already offered &amp; valued by research administration</p>
+        <ul class="outcome-list">` +
+        alreadyStrong.map((s) => `<li><span class="outcome-item-name">${s.name}</span></li>`).join("") +
+        `</ul>`;
     }
 
-    el.innerHTML = `<ol class="outcome-list">` + ranked.slice(0, 8).map((r) => `
-      <li>
-        <span class="outcome-item-name">${r.item.name} <span class="tag tag-${r.status.toLowerCase()}">${r.status}</span></span>
-        <span class="outcome-meter"><span class="outcome-meter-fill" style="width:${(r.adminScore / 6) * 100}%;background:#52733E"></span></span>
-        <span class="outcome-score">${r.adminScore}/6</span>
-      </li>`).join("") + `</ol>`;
+    if (toExpand.length) {
+      html += `<p class="expand-section-label expand-start" style="margin-top:${alreadyStrong.length ? "16px" : "0"}">Services to expand or start — valued by research administration</p>
+        <ol class="outcome-list">` +
+        toExpand.slice(0, 8).map((r) => `
+          <li>
+            <span class="outcome-item-name">${r.item.name} <span class="tag tag-start">${libDone ? "Start" : "Unknown"}</span></span>
+            <span class="outcome-meter"><span class="outcome-meter-fill" style="width:${(r.adminScore / 6) * 100}%;background:#52733E"></span></span>
+            <span class="outcome-score">${r.adminScore}/6</span>
+          </li>`).join("") +
+        `</ol>`;
+    }
+
+    if (!html) {
+      html = `<p class="empty-note">No data yet — check back once research administration has completed their section.</p>`;
+    }
+
+    el.innerHTML = html;
   }
 
   function renderLearnMoreOutcome() {
@@ -952,9 +1042,33 @@
 
     el.innerHTML = `
       <h3>Full detail by service</h3>
+      <p class="detail-intro">Each row shows one service and how each team answered. Colored dots summarize the response — hover for the specific question. The three columns correspond to the three perspectives: what the library knows about the service's cost structure, what research administration says about its value and chargeability, and what finance/costing says about its infrastructure and pool status.</p>
+      <div class="detail-key-grid">
+        <div class="detail-key-group">
+          <p class="detail-key-head" style="color:${ROLES.library.color}">Library indicators</p>
+          <p class="detail-key-item"><span class="vchip" style="background:${VALUE_COLOR[2]}"></span> Can be identified for a specific project</p>
+          <p class="detail-key-item"><span class="vchip" style="background:${VALUE_COLOR[2]}"></span> Used by all/most sponsored projects</p>
+          <p class="detail-key-item"><span class="vchip" style="background:${VALUE_COLOR[2]}"></span> Requested by researchers for specific project needs</p>
+          <p class="detail-key-item"><span class="vchip" style="background:${VALUE_COLOR[2]}"></span> Library already tracks cost or effort per project</p>
+        </div>
+        <div class="detail-key-group">
+          <p class="detail-key-head" style="color:${ROLES.admin.color}">Research Administration indicators</p>
+          <p class="detail-key-item"><span class="vchip" style="background:${VALUE_COLOR[2]}"></span> Essential to the institution's research strategy</p>
+          <p class="detail-key-item"><span class="vchip" style="background:${VALUE_COLOR[2]}"></span> Helps satisfy grant compliance requirements</p>
+          <p class="detail-key-item"><span class="vchip" style="background:${VALUE_COLOR[2]}"></span> PIs would be open to direct charging</p>
+          <p class="detail-key-item"><span class="vchip" style="background:#52733E"></span> Team flagged as wanting to learn more</p>
+        </div>
+        <div class="detail-key-group">
+          <p class="detail-key-head" style="color:${ROLES.costing.color}">Finance/Costing indicators</p>
+          <p class="detail-key-item"><span class="vchip" style="background:${VALUE_COLOR[2]}"></span> Included in Library Cost Pool for IDC calculations</p>
+          <p class="detail-key-item"><span class="vchip" style="background:${VALUE_COLOR[2]}"></span> Existing cost center available for direct charging</p>
+          <p class="detail-key-item"><span class="vchip" style="background:${VALUE_COLOR[0]}"></span> Direct charging would create inconsistency (flagged)</p>
+          <p class="detail-key-item"><span class="vchip" style="background:#1F87A6"></span> Team flagged as wanting to learn more</p>
+        </div>
+      </div>
       <p class="detail-legend">
         <span class="vchip" style="background:${VALUE_COLOR[2]}"></span> Yes / selected &nbsp;
-        <span class="vchip" style="background:${VALUE_COLOR[1]}"></span> Partial &nbsp;
+        <span class="vchip" style="background:${VALUE_COLOR[1]}"></span> Partial / depends &nbsp;
         <span class="vchip" style="background:${VALUE_COLOR[0]}"></span> No / not selected &nbsp;
         <span class="vchip vchip-empty">&middot;</span> Not answered
       </p>
@@ -966,19 +1080,19 @@
               <div class="detail-group">
                 <span class="detail-group-label" style="color:${ROLES.library.color}">Library</span>
                 ${r.notOffered
-                  ? '<span class="detail-not-offered">Not offered</span>'
-                  : chip(r.libA.project_specific, "Project-specific") +
-                    chip(r.libA.usage_scope, "Usage scope") +
-                    chip(r.libA.researcher_request, "Researcher-requested") +
-                    chip(r.libA.cost_tracking, "Tracks cost")}
+                  ? '<span class="detail-not-offered">Not offered — questions skipped</span>'
+                  : chip(r.libA.project_specific, "Can be identified for a specific project") +
+                    chip(r.libA.usage_scope, "Used by all/most sponsored projects") +
+                    chip(r.libA.researcher_request, "Requested by researchers for specific needs") +
+                    chip(r.libA.cost_tracking, "Library tracks cost or effort per project")}
               </div>
               <div class="detail-group">
-                <span class="detail-group-label" style="color:${ROLES.admin.color}">Admin</span>
-                ${chip(r.adminA.value, "Valuable to strategy")}${chip(r.adminA.compliance, "Helps grant compliance")}${chip(r.adminA.chargeable, "Open to direct charging")}${learnMoreChip(r.item.id)}
+                <span class="detail-group-label" style="color:${ROLES.admin.color}">Research Admin</span>
+                ${chip(r.adminA.compliance, "Helps satisfy grant compliance")}${chip(r.adminA.value, "Essential to research strategy")}${chip(r.adminA.chargeable, "PIs open to direct charging")}${learnMoreChip(r.item.id)}
               </div>
               <div class="detail-group">
                 <span class="detail-group-label" style="color:${ROLES.costing.color}">Finance/Costing</span>
-                ${chip(r.costA.idc, "In IDC cost pool")}${chip(r.costA.costcenter, "Has a cost center")}${chip(r.costA.phase_in, "Phase-in path available")}${r.costA.learnmore ? `<span class="vchip" style="background:#1F87A6" title="Wants to learn more"></span>` : ''}
+                ${chip(r.costA.idc, "In Library Cost Pool for IDC")}${chip(r.costA.costcenter, "Cost center available for direct charging")}${chip(r.costA.inconsistency, "Direct charging creates inconsistency (flagged)")}${r.costA.learnmore ? `<span class="vchip" style="background:#1F87A6" title="Finance/Costing wants to learn more"></span>` : ''}
               </div>
             </div>
           </div>`).join("")}

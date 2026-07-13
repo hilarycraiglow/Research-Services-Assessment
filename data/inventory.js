@@ -82,7 +82,7 @@ const INVENTORY = [
   { id: "research-authorship", category: "manage", name: "Research authorship verification",
     desc: "Support for verifying and disclosing complete authorship history, affiliations, and funding sources on federal biosketches and disclosure forms.",
     institutional: true, projectSpecific: true, unallowable: false },
-  { id: "data-security", category: "manage", name: "Research data security",
+  { id: "data-security", category: "manage", name: "Research data security consulting",
     desc: "Protocols and systems that safeguard sensitive or regulated research data. This work protects the privacy of research participants and reduces the institution's exposure to a costly data breach.",
     institutional: true, projectSpecific: true, unallowable: false },
   { id: "research-visibility", category: "manage", name: "Research visibility and impact",

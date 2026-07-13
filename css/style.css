@@ -444,6 +444,62 @@ body {
 .qw-gap-tags { display: inline-flex; gap: 4px; margin-left: 8px; flex-wrap: wrap; }
 .gap-intro { margin: 0 0 10px; font-size: 13px; color: var(--text-muted); }
 
+/* ---------- expand outcome sub-sections ---------- */
+.expand-section-label {
+  margin: 0 0 6px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; padding: 2px 0 2px 8px;
+}
+.expand-offered { color: #1a6e3e; border-left: 3px solid #1a6e3e; }
+.expand-start   { color: #52733E; border-left: 3px solid #52733E; }
+
+/* ---------- learn-more card full width ---------- */
+.outcome-card-wide {
+  margin: 0 0 32px;
+  background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 20px;
+}
+.outcome-card-wide .outcome-list { columns: 2; column-gap: 24px; }
+@media (max-width: 600px) { .outcome-card-wide .outcome-list { columns: 1; } }
+
+/* ---------- finish banner ---------- */
+.finish-banner {
+  background: var(--navy); color: #fff; border-radius: var(--radius);
+  padding: 24px 28px; margin-top: 32px;
+  display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap;
+}
+.finish-banner-title { margin: 0 0 4px; font-size: 16px; font-weight: 700; }
+.finish-banner-sub { margin: 0; font-size: 13px; opacity: .8; }
+.finish-banner-actions { display: flex; gap: 10px; flex-shrink: 0; flex-wrap: wrap; }
+.finish-btn { white-space: nowrap; }
+.btn-outline {
+  background: transparent; border: 2px solid rgba(255,255,255,.5); color: #fff;
+  padding: 10px 18px; border-radius: 7px; font-size: 14px; font-weight: 600; cursor: pointer;
+  transition: border-color .15s;
+}
+.btn-outline:hover { border-color: #fff; }
+
+/* ---------- threshold Q4 (costing) ---------- */
+.threshold-radios { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 14px; }
+.threshold-radio-row { display: flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; }
+.threshold-radio-row input[type="radio"] { accent-color: var(--teal); width: 15px; height: 15px; }
+.threshold-text-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+.threshold-text-input {
+  width: 100%; max-width: 420px; padding: 8px 12px; border: 1px solid var(--border);
+  border-radius: 7px; font-size: 14px; color: var(--text); background: var(--card-bg);
+}
+.threshold-text-input:focus { outline: 2px solid var(--teal); border-color: transparent; }
+
+/* ---------- detail key grid ---------- */
+.detail-intro { margin: 0 0 16px; font-size: 13.5px; color: var(--text-muted); line-height: 1.55; }
+.detail-key-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px; margin-bottom: 16px;
+  background: var(--bg); border-radius: var(--radius); padding: 16px;
+}
+.detail-key-head { margin: 0 0 8px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.detail-key-item { margin: 0 0 4px; font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+.detail-key-item .vchip { flex-shrink: 0; }
+
 /* ---------- print (PDF export of outcomes) ---------- */
 @media print {
   .topbar, .hero-banner, .tabnav-bar, .cta-banner, .progress-summary, .share-box,

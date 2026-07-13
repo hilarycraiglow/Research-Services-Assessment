@@ -62,15 +62,26 @@ const ROLES = {
   costing: {
     id: "costing",
     label: "Institutional Finance/Costing",
-    subtitle: "Institutional research finance or cost accounting teams",
+    subtitle: "Institutional research finance & cost accountants",
     color: "#1F87A6",
     questions: [
       { key: "idc",
         text: "Do you include the cost of this service in your Library Cost Pool for IDC calculations?" },
       { key: "costcenter",
         text: "Do you have an existing cost center, or similar mechanism, that could be used to direct charge departments or grants for this service?" },
-      { key: "phase_in",
-        text: "Is there a phase-in or pilot path to direct charge this service before a broader implementation?" }
+      { key: "inconsistency",
+        text: "Check the box if direct charging for this service would create inconsistency with how similar costs are treated elsewhere at the institution." },
+      { key: "threshold",
+        text: "Do you have a threshold amount to consider moving a library service from the IDC to direct charging?",
+        options: [
+          { value: 2, label: "Yes" },
+          { value: 1, label: "Depends" },
+          { value: 0, label: "No" }
+        ],
+        hasTextInput: true,
+        textInputLabel: "Specify the threshold (optional):",
+        textInputKey: "threshold_text"
+      }
     ]
   }
 };

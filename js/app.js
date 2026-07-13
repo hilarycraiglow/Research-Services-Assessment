@@ -68,24 +68,17 @@
   }
 
   function adminCompletion() {
+    // Admin is question-by-question: complete once the form has been rendered (all entries initialized)
     const answers = DATA.admin || {};
-    const keys = ["value", "compliance", "chargeable"];
-    let answered = 0;
-    INVENTORY.forEach((item) => {
-      const a = answers[item.id];
-      if (a && keys.every((k) => a[k] !== undefined)) answered++;
-    });
-    return { answered, total: INVENTORY.length };
+    const initialized = INVENTORY.filter((item) => answers[item.id] !== undefined).length;
+    return { answered: initialized, total: INVENTORY.length };
   }
 
   function costingCompletion() {
+    // Costing is question-by-question: complete once the form has been rendered (all entries initialized)
     const answers = DATA.costing || {};
-    let answered = 0;
-    INVENTORY.forEach((item) => {
-      const a = answers[item.id];
-      if (a && ROLES.costing.questions.some((q) => a[q.key] !== undefined)) answered++;
-    });
-    return { answered, total: INVENTORY.length };
+    const initialized = INVENTORY.filter((item) => answers[item.id] !== undefined).length;
+    return { answered: initialized, total: INVENTORY.length };
   }
 
   // ---------- VIEW SWITCHING ----------

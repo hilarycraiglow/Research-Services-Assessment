@@ -467,8 +467,13 @@ body {
   padding: 24px 28px; margin-top: 32px;
   display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap;
 }
+.finish-banner-incomplete { background: #7A3A0A; }
 .finish-banner-title { margin: 0 0 4px; font-size: 16px; font-weight: 700; }
 .finish-banner-sub { margin: 0; font-size: 13px; opacity: .8; }
+.finish-incomplete-note {
+  margin: 8px 0 0; font-size: 13px; font-weight: 600;
+  background: rgba(255,255,255,.15); border-radius: 6px; padding: 6px 10px;
+}
 .finish-banner-actions { display: flex; gap: 10px; flex-shrink: 0; flex-wrap: wrap; }
 .finish-btn { white-space: nowrap; }
 .btn-outline {
@@ -508,15 +513,27 @@ body {
 .detail-key-item { margin: 0 0 4px; font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
 .detail-key-item .vchip { flex-shrink: 0; }
 
-/* ---------- learn more colorful tags ---------- */
-.learnmore-tag {
-  display: inline-block; padding: 2px 9px; border-radius: 10px; color: #fff;
-  font-size: 11px; font-weight: 600; margin-left: 6px; vertical-align: middle;
+/* ---------- learnmore legend & dots ---------- */
+.outcome-legend {
+  display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 14px;
+  padding: 10px 14px; background: var(--bg); border-radius: 8px;
+}
+.outcome-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--text-muted); }
+.learnmore-dot {
+  display: inline-block; width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; vertical-align: middle;
 }
 
-/* ---------- detail threshold section ---------- */
-.detail-threshold-section { margin-bottom: 28px; }
-.detail-threshold-heading { margin: 0 0 10px; font-size: 15px; font-weight: 700; color: var(--navy); }
+/* ---------- threshold card result ---------- */
+.threshold-result { margin: 0; font-size: 15px; }
+
+/* ---------- detail legend ---------- */
+.detail-legend {
+  display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start;
+  background: var(--bg); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px;
+}
+.detail-legend-section { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.detail-legend-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin-right: 2px; }
+.detail-legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-muted); }
 
 /* ---------- alignment dots ---------- */
 .align-bar {

@@ -213,7 +213,7 @@
       section.classList.add("open");
       container.appendChild(section);
     });
-    appendFinishBanner(container, ROLES[roleId].label);
+    appendFinishBanner(container, ROLES[roleId].label, roleId);
     updateAssessmentProgress(roleId);
   }
 
@@ -301,13 +301,21 @@
   }
 
   // Shared: append a finish/submit banner at the bottom of an assessment container
-  function appendFinishBanner(container, roleLabel) {
+  function appendFinishBanner(container, roleLabel, roleId) {
+    const { answered, total } = roleCompletion(roleId);
+    const remaining = total - answered;
+    const complete = remaining === 0;
     const banner = document.createElement("div");
-    banner.className = "finish-banner";
+    banner.className = "finish-banner" + (complete ? "" : " finish-banner-incomplete");
+    const incompleteNote = complete ? "" : `
+      <p class="finish-incomplete-note">
+        ${remaining} service${remaining !== 1 ? "s" : ""} still need${remaining === 1 ? "s" : ""} responses — scroll up to find unanswered sections.
+      </p>`;
     banner.innerHTML = `
       <div class="finish-banner-copy">
-        <p class="finish-banner-title">You're done with the ${roleLabel} section</p>
+        <p class="finish-banner-title">${complete ? `You're done with the ${roleLabel} section` : `${roleLabel} assessment in progress`}</p>
         <p class="finish-banner-sub">Your answers are saved automatically. Head to Outcomes to see combined results, or use the share link above to bring in the other teams.</p>
+        ${incompleteNote}
       </div>
       <div class="finish-banner-actions">
         <button class="btn btn-cta finish-btn" data-goto="results">View Outcomes &rarr;</button>
@@ -526,7 +534,7 @@
     learnSection.appendChild(learnBody);
     container.appendChild(learnSection);
 
-    appendFinishBanner(container, ROLES.costing.label);
+    appendFinishBanner(container, ROLES.costing.label, "costing");
     updateCostingProgress();
   }
 
@@ -712,7 +720,7 @@
     learnSection.appendChild(learnBody);
     container.appendChild(learnSection);
 
-    appendFinishBanner(container, ROLES.admin.label);
+    appendFinishBanner(container, ROLES.admin.label, "admin");
     updateAdminProgress();
   }
 
@@ -806,8 +814,24 @@
   function renderResults() {
     renderTransparencyOutcome();
     renderExpandOutcome();
+    renderThresholdCard();
     renderLearnMoreOutcome();
     renderDetailVisual();
+  }
+
+  function renderThresholdCard() {
+    const el = document.querySelector("#outcome-threshold .outcome-body");
+    if (!el) return;
+    const thresholdData = (DATA.costing || {})._threshold || {};
+    const thresholdValue = thresholdData.threshold;
+    const thresholdText = thresholdData.threshold_text || "";
+    const thresholdLabels = { 2: "Yes", 1: "Depends", 0: "No" };
+    if (thresholdValue === undefined) {
+      el.innerHTML = `<p class="empty-note">Not yet answered — complete the Institutional Finance/Costing assessment to add this.</p>`;
+      return;
+    }
+    const displayText = thresholdText ? ` &mdash; $${thresholdText}` : "";
+    el.innerHTML = `<p class="threshold-result"><strong>${thresholdLabels[thresholdValue]}</strong>${displayText}</p>`;
   }
 
   function renderTransparencyOutcome() {
@@ -921,10 +945,14 @@
       return;
     }
     const tagColors = { "Research Admin": ROLES.admin.color, "Costing": ROLES.costing.color };
-    el.innerHTML = `<ul class="outcome-list">` + items.map((r) => `
+    const legend = `<div class="outcome-legend">
+      <span class="outcome-legend-item"><span class="learnmore-dot" style="background:${ROLES.admin.color}"></span>Research Admin</span>
+      <span class="outcome-legend-item"><span class="learnmore-dot" style="background:${ROLES.costing.color}"></span>Finance/Costing</span>
+    </div>`;
+    el.innerHTML = legend + `<ul class="outcome-list">` + items.map((r) => `
       <li>
         <span class="outcome-item-name">${r.item.name}</span>
-        ${r.tags.map((t) => `<span class="learnmore-tag" style="background:${tagColors[t]}">${t}</span>`).join("")}
+        ${r.tags.map((t) => `<span class="learnmore-dot" style="background:${tagColors[t]}" title="${t}"></span>`).join("")}
       </li>`).join("") + `</ul>`;
   }
 
@@ -1078,26 +1106,25 @@
       return { item, libA, adminA, costA, notOffered, score };
     }).sort((a, b) => b.score - a.score); // highest alignment first
 
-    // Costing Q4 threshold — institution-level, not per service
-    const thresholdData = (DATA.costing || {})._threshold || {};
-    const thresholdValue = thresholdData.threshold;
-    const thresholdText = thresholdData.threshold_text || "";
-    const thresholdLabels = { 2: "Yes", 1: "Depends", 0: "No" };
-    const thresholdNote = thresholdValue !== undefined
-      ? `<strong>${thresholdLabels[thresholdValue]}</strong>${thresholdText ? ` — $${thresholdText}` : ""}`
-      : `<em>Not yet answered</em>`;
-
     el.innerHTML = `
-      <div class="detail-threshold-section">
-        <h3 class="detail-threshold-heading">Finance/Costing Threshold</h3>
-        <div class="detail-threshold-box">
-          <p class="detail-threshold-label">Threshold for moving a service from IDC to direct charging:</p>
-          <p class="detail-threshold-value">${thresholdNote}</p>
-        </div>
-      </div>
-
       <h3>Full Detail by Service</h3>
       <p class="detail-intro">Each service is shown with its full description, how each team answered, and an alignment indicator showing which teams signal interest in exploring further. Services are sorted by the highest interest in exploring further.</p>
+
+      <div class="detail-legend">
+        <div class="detail-legend-section">
+          <span class="detail-legend-title">Answer key</span>
+          <span class="detail-legend-item"><span class="vchip" style="background:#52733E"></span>Yes / good</span>
+          <span class="detail-legend-item"><span class="vchip" style="background:#C9941F"></span>Unsure / maybe</span>
+          <span class="detail-legend-item"><span class="vchip" style="background:#E6394A"></span>No / caution</span>
+          <span class="detail-legend-item"><span class="vchip vchip-empty">&middot;</span>Not yet answered</span>
+        </div>
+        <div class="detail-legend-section">
+          <span class="detail-legend-title">Alignment dots</span>
+          <span class="detail-legend-item"><span class="align-dot" style="background:#52733E;display:inline-block"></span>All 3 teams</span>
+          <span class="detail-legend-item"><span class="align-dot" style="background:#C9941F;display:inline-block"></span>1–2 teams</span>
+          <span class="detail-legend-item"><span class="align-dot align-dot-off" style="display:inline-block"></span>None yet</span>
+        </div>
+      </div>
 
       <div class="detail-rows">
         ${rows.map((r) => `

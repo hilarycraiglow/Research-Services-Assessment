@@ -8,6 +8,15 @@
 </head>
 <body>
 
+<!-- Print-only header: logo, contact, institution -->
+<div class="print-header" id="print-header">
+  <img src="assets/attain-partners-logo.png" alt="Attain Partners" class="print-logo">
+  <div class="print-header-right">
+    <span id="print-institution-name"></span>
+    <a href="https://attainpartners.com/contact/" class="print-contact">attainpartners.com/contact</a>
+  </div>
+</div>
+
 <header class="topbar">
   <div class="topbar-inner">
     <div class="brand">
@@ -28,11 +37,11 @@
         This assessment is a collaborative effort between the library, research administration, and university finance and costing teams, built on the <a href="https://figshare.com/articles/online_resource/Research_Information_and_Data_Service_Inventory/32581626/1?file=65289315" target="_blank" rel="noopener" class="hero-link">Research Information and Data Service Inventory</a> (Craiglow &amp; LaFlamme, ARL). It asks about 22 library services from different perspectives and brings the answers together to start a shared conversation about how the library supports the research enterprise and where that support could be made more financially visible.
       </p>
       <p class="hero-desc">
-        The results are a conversation starter, not a directive: a shared basis for the library, research administration, and finance to align on library cost pool structure and grant charging decisions together. That shared understanding strengthens compliance and supports long-term institutional financial stability by ensuring library investments in research support are accurately recognized, appropriately accounted for, and sustainably resourced.
+        The results are a conversation starter, not a directive: a shared basis for the library, research administration, and costing/finance to align on library indirect cost pool structure and grant charging decisions together. That shared understanding strengthens compliance and supports long-term institutional financial stability by ensuring library investments in research support are accurately recognized, appropriately accounted for, and sustainably resourced.
       </p>
       <div class="cta-row">
         <button class="btn btn-cta" data-scroll-to="role-grid">Start the assessment <span class="cta-arrow">&rarr;</span></button>
-        <button class="btn btn-outline-light" data-scroll-to="share-box">Combine results across teams</button>
+        <button class="btn btn-outline-light" id="open-institution-modal-btn">Create a Unique Assessment URL for my Institution</button>
       </div>
     </div>
   </div>
@@ -44,10 +53,14 @@
   <button class="tab-link" data-view="results"><span class="tab-num">3</span>Outcomes</button>
 </nav>
 
+<div id="institution-banner" class="institution-banner" hidden></div>
+
 <main id="app">
 
   <!-- HOME / ROLE PICKER -->
   <section class="view" id="view-home">
+
+    <p class="role-instructions">Any member of an institution can start the assessment. After all three perspectives are complete, see your outcomes report.</p>
 
     <div class="role-grid" id="role-grid">
       <article class="role-card" data-role="library">
@@ -55,7 +68,7 @@
         <span class="pill-badge pill-navy">LIBRARY</span>
         <h2>Library</h2>
         <p class="role-card-sub">Library leadership &amp; service managers</p>
-        <p>Inventory your research and data services, and discover which services are most valued by research administrators, and where to unlock cost transparency or grant charging.</p>
+        <p>Inventory your research and data services, and discover which services are most valued by research administrators, and where to consider cost transparency or grant charging.</p>
         <button class="btn btn-primary" data-start="library">Start as Library</button>
       </article>
       <article class="role-card" data-role="admin">
@@ -71,7 +84,7 @@
         <span class="pill-badge pill-teal">INSTITUTIONAL FINANCE/COSTING</span>
         <h2>Institutional Finance/Costing</h2>
         <p class="role-card-sub">Research finance &amp; cost accounting teams</p>
-        <p>Are all library services recognized in your IDC calculations, do you have a cost center for direct charging, or is it useful to start tracking costs for library services?</p>
+        <p>Document that all library services are recognized in your IDC calculations and discover which library costs are worth tracking as potential direct charges.</p>
         <button class="btn btn-primary" data-start="costing">Start as Institutional Finance/Costing</button>
       </article>
     </div>
@@ -158,6 +171,69 @@
   </section>
 
 </main>
+
+<!-- Institution URL modal -->
+<div id="institution-modal" class="modal-overlay" hidden>
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 class="modal-title">Create a Unique Assessment URL</h3>
+      <button class="modal-close" id="modal-close-btn" aria-label="Close">&times;</button>
+    </div>
+    <p class="modal-desc">Select your institution to generate a shareable URL. Anyone who opens the link will see your institution's name on every page of the assessment.</p>
+    <label class="modal-label" for="institution-select">Institution</label>
+    <select id="institution-select" class="modal-select">
+      <option value="">— Select an institution —</option>
+      <option>Arizona State University</option>
+      <option>Brown University</option>
+      <option>Cold Spring Harbor Laboratory</option>
+      <option>Colorado State University</option>
+      <option>Cornell University</option>
+      <option>Duke University</option>
+      <option>George Mason University</option>
+      <option>Johns Hopkins University</option>
+      <option>Massachusetts Institute of Technology</option>
+      <option>New York University</option>
+      <option>Texas State University</option>
+      <option>University at Buffalo</option>
+      <option>University of Alabama</option>
+      <option>University of Arizona</option>
+      <option>University of California Riverside</option>
+      <option>University of California, Davis</option>
+      <option>University of California, Los Angeles</option>
+      <option>University of California, Santa Barbara</option>
+      <option>University of Connecticut</option>
+      <option>University of Delaware</option>
+      <option>University of Florida</option>
+      <option>University of Hawai&#x02BB;i</option>
+      <option>University of Iowa</option>
+      <option>University of Kentucky</option>
+      <option>University of Minnesota</option>
+      <option>University of Nebraska-Lincoln</option>
+      <option>University of Nevada, Las Vegas</option>
+      <option>University of Rochester</option>
+      <option>University of South Carolina</option>
+      <option>University of Utah</option>
+      <option>University of Wisconsin-Madison</option>
+      <option>Van Andel Institute</option>
+      <option>Virginia Tech</option>
+      <option>Washington University in St. Louis</option>
+      <option>Yale University</option>
+    </select>
+    <div id="modal-url-section" hidden>
+      <label class="modal-label">Your unique assessment URL</label>
+      <div class="modal-url-row">
+        <input type="text" id="modal-url-input" class="modal-url-input" readonly>
+        <button class="btn btn-secondary" id="modal-copy-btn">Copy</button>
+        <a class="btn btn-text" id="modal-email-btn" href="#">Email</a>
+      </div>
+      <p class="modal-copied" id="modal-copied" hidden>Copied to clipboard!</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="modal-generate-btn">Generate URL</button>
+      <button class="btn btn-text" id="modal-cancel-btn">Cancel</button>
+    </div>
+  </div>
+</div>
 
 <script src="data/inventory.js"></script>
 <script src="data/roles.js"></script>

@@ -110,6 +110,54 @@ body {
 
 .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .06em; color: var(--red); text-transform: uppercase; margin: 0 0 6px; }
 
+/* ---------- institution banner ---------- */
+.institution-banner {
+  background: var(--navy); color: #AEC0D6; font-size: 13px; font-weight: 600;
+  text-align: center; padding: 7px 24px; letter-spacing: .02em;
+}
+.institution-banner[hidden] { display: none; }
+
+/* ---------- role instructions ---------- */
+.role-instructions {
+  font-size: 14px; color: var(--text-muted); margin: 0 0 4px;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+
+/* ---------- modal ---------- */
+body.modal-open { overflow: hidden; }
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(11,31,58,.55); backdrop-filter: blur(2px);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+.modal-overlay[hidden] { display: none; }
+.modal-box {
+  background: var(--card-bg); border-radius: 12px; padding: 28px 30px;
+  width: 100%; max-width: 520px; box-shadow: 0 8px 32px rgba(11,31,58,.24);
+}
+.modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.modal-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--navy); }
+.modal-close {
+  background: none; border: none; font-size: 22px; cursor: pointer;
+  color: var(--text-muted); line-height: 1; padding: 2px 6px;
+}
+.modal-close:hover { color: var(--navy); }
+.modal-desc { font-size: 14px; color: var(--text-muted); margin: 0 0 18px; line-height: 1.5; }
+.modal-label { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin-bottom: 6px; }
+.modal-select {
+  width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+  font-size: 14px; color: var(--text); background: var(--card-bg); margin-bottom: 20px;
+  appearance: auto;
+}
+.modal-select:focus { outline: 2px solid var(--teal); }
+.modal-url-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.modal-url-input {
+  flex: 1; min-width: 0; padding: 9px 12px; border: 1px solid var(--border);
+  border-radius: 8px; font-size: 13px; background: var(--bg); color: var(--text);
+}
+.modal-copied { font-size: 12px; color: var(--green); font-weight: 600; margin: 0 0 12px; }
+.modal-actions { display: flex; gap: 10px; align-items: center; margin-top: 8px; }
+
 /* ---------- role cards ---------- */
 .role-grid {
   display: grid;
@@ -589,10 +637,22 @@ body {
 }
 .detail-q-item .vchip { flex-shrink: 0; margin-top: 1px; }
 
+/* ---------- print header (hidden on screen, shown in print) ---------- */
+.print-header { display: none; }
+
 /* ---------- print (PDF export of outcomes) ---------- */
 @media print {
+  .print-header {
+    display: flex !important; align-items: center; justify-content: space-between;
+    padding: 12px 24px 12px; border-bottom: 2px solid #0B1F3A; margin-bottom: 16px;
+  }
+  .print-logo { height: 28px; }
+  .print-header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+  .print-header-right #print-institution-name { font-size: 13px; font-weight: 700; color: #0B1F3A; }
+  .print-contact { font-size: 11px; color: #5B6776; text-decoration: none; }
+
   .topbar, .hero-banner, .tabnav-bar, .cta-banner, .progress-summary, .share-box,
-  .whatsnext-box, .eyebrow { display: none !important; }
+  .whatsnext-box, .eyebrow, .institution-banner, .modal-overlay { display: none !important; }
   body, #app { background: #fff; }
   .outcome-card, .results-detail { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
   .results-grid { grid-template-columns: 1fr 1fr; }

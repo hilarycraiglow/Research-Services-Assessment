@@ -2,10 +2,43 @@
   "use strict";
 
   const STORAGE_KEY = "rsra-answers-v1";
+  const INSTITUTION_KEY = "rsra-institution";
 
   /** @type {{library: object, admin: object, costing: object}} */
   let DATA = loadData();
-  mergeSharedLinkData();
+  let currentInstitution = localStorage.getItem(INSTITUTION_KEY) || "";
+  // (hash processing happens immediately after this block)
+
+  // Process URL hash: extract institution and share data before anything else
+  (function processHash() {
+    const hash = window.location.hash || "";
+    if (!hash) return;
+    const raw = hash.startsWith("#") ? hash.slice(1) : hash;
+
+    // Extract institution= param
+    const instMatch = raw.match(/(?:^|&)institution=([^&]+)/);
+    if (instMatch) {
+      currentInstitution = decodeURIComponent(instMatch[1].replace(/\+/g, " "));
+      localStorage.setItem(INSTITUTION_KEY, currentInstitution);
+    }
+
+    // Extract share= param (base64 may contain + and =, so find from "share=" to next &institution)
+    const shareMatch = raw.match(/(?:^|&)share=(.+?)(?:&institution=|$)/);
+    if (shareMatch) {
+      try {
+        const incoming = JSON.parse(decodeURIComponent(escape(atob(shareMatch[1]))));
+        ROLE_ORDER.forEach((roleId) => {
+          if (incoming[roleId]) DATA[roleId] = Object.assign({}, DATA[roleId], incoming[roleId]);
+        });
+        saveData();
+      } catch (e) {}
+    }
+
+    history.replaceState(null, "", window.location.pathname + window.location.search);
+  })();
+
+  // Legacy: handle old-style #share= without institution param
+  function mergeSharedLinkData() { /* handled above */ }
 
   function loadData() {
     try {
@@ -20,27 +53,11 @@
   }
 
   // ---------- SHARE LINK ----------
-  function encodeShareData(data) {
-    return btoa(unescape(encodeURIComponent(JSON.stringify(data))));
-  }
-  function decodeShareData(str) {
-    return JSON.parse(decodeURIComponent(escape(atob(str))));
-  }
   function buildShareLink() {
-    const encoded = encodeShareData(DATA);
-    return window.location.href.split("#")[0] + `#share=${encoded}`;
-  }
-  function mergeSharedLinkData() {
-    const hash = window.location.hash || "";
-    if (!hash.startsWith("#share=")) return;
-    try {
-      const incoming = decodeShareData(hash.slice("#share=".length));
-      ROLE_ORDER.forEach((roleId) => {
-        if (incoming[roleId]) DATA[roleId] = Object.assign({}, DATA[roleId], incoming[roleId]);
-      });
-      saveData();
-      history.replaceState(null, "", window.location.pathname + window.location.search);
-    } catch (e) {}
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(DATA))));
+    let url = window.location.href.split("#")[0] + `#share=${encoded}`;
+    if (currentInstitution) url += `&institution=${encodeURIComponent(currentInstitution)}`;
+    return url;
   }
 
   function categoryItems(catId) {
@@ -722,6 +739,73 @@
     document.getElementById("assessment-progress").textContent = `${answered} / ${total}`;
   }
 
+  // ---------- INSTITUTION BANNER ----------
+  function updateInstitutionBanner() {
+    const banner = document.getElementById("institution-banner");
+    const printName = document.getElementById("print-institution-name");
+    if (currentInstitution) {
+      banner.textContent = currentInstitution;
+      banner.hidden = false;
+      if (printName) printName.textContent = currentInstitution;
+    } else {
+      banner.hidden = true;
+    }
+  }
+
+  // ---------- INSTITUTION MODAL ----------
+  const institutionModal = document.getElementById("institution-modal");
+  const institutionSelect = document.getElementById("institution-select");
+  const modalUrlSection = document.getElementById("modal-url-section");
+  const modalUrlInput = document.getElementById("modal-url-input");
+
+  document.getElementById("open-institution-modal-btn").addEventListener("click", () => {
+    // Pre-select current institution if one is set
+    if (currentInstitution) institutionSelect.value = currentInstitution;
+    modalUrlSection.hidden = true;
+    institutionModal.hidden = false;
+    document.body.classList.add("modal-open");
+  });
+
+  function closeModal() {
+    institutionModal.hidden = true;
+    document.body.classList.remove("modal-open");
+  }
+
+  document.getElementById("modal-close-btn").addEventListener("click", closeModal);
+  document.getElementById("modal-cancel-btn").addEventListener("click", closeModal);
+  institutionModal.addEventListener("click", (e) => { if (e.target === institutionModal) closeModal(); });
+
+  document.getElementById("modal-generate-btn").addEventListener("click", () => {
+    const selected = institutionSelect.value;
+    if (!selected) { institutionSelect.focus(); return; }
+    currentInstitution = selected;
+    localStorage.setItem(INSTITUTION_KEY, currentInstitution);
+    updateInstitutionBanner();
+    const url = window.location.href.split("#")[0] + "#institution=" + encodeURIComponent(currentInstitution);
+    modalUrlInput.value = url;
+    modalUrlSection.hidden = false;
+  });
+
+  document.getElementById("modal-copy-btn").addEventListener("click", async () => {
+    const copied = document.getElementById("modal-copied");
+    try { await navigator.clipboard.writeText(modalUrlInput.value); }
+    catch (e) { modalUrlInput.select(); document.execCommand("copy"); }
+    copied.hidden = false;
+    setTimeout(() => { copied.hidden = true; }, 2500);
+  });
+
+  document.getElementById("modal-email-btn").addEventListener("click", (e) => {
+    e.preventDefault();
+    const url = modalUrlInput.value;
+    const inst = currentInstitution;
+    const subject = encodeURIComponent(`Research Services Readiness Assessment — ${inst}`);
+    const body = encodeURIComponent(
+      `Hi,\n\nI've created a Research Services Collaborative Readiness Assessment for ${inst}. ` +
+      `Use this link to open the assessment with our institution name pre-loaded:\n\n${url}\n\nThanks!`
+    );
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  });
+
   // ---------- SHARE LINK UI ----------
   const shareLinkInput = document.getElementById("share-link-input");
 
@@ -1160,5 +1244,6 @@
   }
 
   // init
+  updateInstitutionBanner();
   renderHomeProgress();
 })();

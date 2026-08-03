@@ -73,13 +73,12 @@
 
   function libraryCompletion() {
     const answers = DATA.library || {};
-    const keys = ["project_specific", "usage_scope", "researcher_request", "cost_tracking"];
     let answered = 0;
     INVENTORY.forEach((item) => {
       const a = answers[item.id];
       if (!a) return;
       if (a.offers === false) { answered++; return; }
-      if (keys.every((k) => a[k] !== undefined)) answered++;
+      if (a.cost_tracking !== undefined) answered++;
     });
     return { answered, total: INVENTORY.length };
   }
@@ -560,9 +559,9 @@
 
   // ---------- ADMIN ASSESSMENT (question-by-question, grouped by lifecycle) ----------
   const ADMIN_QUESTIONS = [
-    { key: "compliance", text: "Which of the following library services help satisfy grant compliance requirements? Select all that apply." },
-    { key: "value",      text: "Which of the following library services are essential to your institution's research strategy? Select all that apply." },
-    { key: "chargeable", text: "If there were an allocable, documented per project cost for this service, would your PIs be open to direct charging grants to keep the service sustainable for the institution? Select all that apply." }
+    { key: "compliance", text: "Which of the following library services would help you satisfy grant compliance requirements? Select all that apply." },
+    { key: "value",      text: "Which of the following library services directly impact your institution's research strategy? Select all that apply." },
+    { key: "chargeable", text: "If there were an allocable, documented per project cost for this service, would you consider direct charging grants to keep the service sustainable for the institution? Select all that apply." }
   ];
 
   function renderAdminAssessment() {
@@ -870,8 +869,7 @@
   function libAnswers(itemId) {
     const a = (DATA.library || {})[itemId];
     if (!a || a.offers === false) return null;
-    const keys = ["project_specific", "usage_scope", "researcher_request", "cost_tracking"];
-    if (!keys.every((k) => a[k] !== undefined)) return null;
+    if (a.cost_tracking === undefined) return null;
     return a;
   }
 
@@ -1150,14 +1148,14 @@
     let score = 0;
     if (!notOffered && (libA.cost_tracking || 0) >= 1) score++;
     if ((adminA.value || 0) === 2 && (adminA.chargeable || 0) >= 1) score++;
-    if (((costA.idc || 0) === 2 || (costA.costcenter || 0) === 2) && costA.inconsistency !== 0) score++;
+    if ((costA.idc || 0) === 2 || (costA.costcenter || 0) === 2) score++;
     return score;
   }
 
   function alignmentBar(score, libA, adminA, costA, notOffered) {
     const libReady = !notOffered && (libA.cost_tracking || 0) >= 1;
     const adminReady = (adminA.value || 0) === 2 && (adminA.chargeable || 0) >= 1;
-    const costReady = ((costA.idc || 0) === 2 || (costA.costcenter || 0) === 2) && costA.inconsistency !== 0;
+    const costReady = (costA.idc || 0) === 2 || (costA.costcenter || 0) === 2;
 
     const dotColor = score === 3 ? '#52733E' : score >= 1 ? '#C9941F' : '#d0d7df';
 
@@ -1214,9 +1212,6 @@
                 ${r.notOffered
                   ? '<span class="detail-not-offered">Not offered</span>'
                   : `<div class="detail-q-list">
-                      <div class="detail-q-item">${chip(r.libA.project_specific, "Can be identified for a specific project")}<span>Can be identified for a specific project</span></div>
-                      <div class="detail-q-item">${chip(r.libA.usage_scope, "Used by all/most sponsored projects")}<span>Used by all/most sponsored projects</span></div>
-                      <div class="detail-q-item">${chip(r.libA.researcher_request, "Requested by researchers for specific needs")}<span>Requested by researchers for specific project needs</span></div>
                       <div class="detail-q-item">${chip(r.libA.cost_tracking, "Library tracks cost or effort per project")}<span>Library already tracks cost or effort per project</span></div>
                     </div>`}
               </div>
@@ -1232,9 +1227,8 @@
               <div class="detail-group">
                 <span class="detail-group-label" style="color:${ROLES.costing.color}">Finance/Costing</span>
                 <div class="detail-q-list">
-                  <div class="detail-q-item">${chip(r.costA.idc, "In Library Cost Pool for IDC")}<span>Included in Library Cost Pool for IDC calculations</span></div>
+                  <div class="detail-q-item">${chip(r.costA.idc, "Cost recovered in indirect cost rate")}<span>Costs recovered in indirect cost rate</span></div>
                   <div class="detail-q-item">${chip(r.costA.costcenter, "Cost center available")}<span>Existing cost center available to direct charge departments or grants</span></div>
-                  <div class="detail-q-item">${chip(r.costA.inconsistency, "No inconsistency with similar costs")}<span>Direct charging would not create inconsistency with similar costs elsewhere</span></div>
                   <div class="detail-q-item">${r.costA.learnmore ? `<span class="vchip" style="background:${ROLES.costing.color}" title="Wants to learn more"></span>` : `<span class="vchip vchip-empty">&middot;</span>`}<span>Flagged: wants to learn more from the library</span></div>
                 </div>
               </div>

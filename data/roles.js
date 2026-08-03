@@ -6,24 +6,6 @@ const ROLES = {
     subtitle: "Library leadership & service managers",
     color: "#0B2545",
     questions: [
-      { key: "project_specific",
-        text: () => "Can this service be identified specifically for an individual research project?",
-        options: [
-          { value: 2, label: "Yes" },
-          { value: 0, label: "No" }
-        ] },
-      { key: "usage_scope",
-        text: () => "Is this service used by all/most sponsored projects, or only some?",
-        options: [
-          { value: 2, label: "All / most" },
-          { value: 1, label: "Some" }
-        ] },
-      { key: "researcher_request",
-        text: () => "Is the service used or requested by a researcher for the unique needs of a specific project?",
-        options: [
-          { value: 2, label: "Yes" },
-          { value: 0, label: "No" }
-        ] },
       { key: "cost_tracking",
         text: () => "Does the library already track cost, time, or effort at the level of an individual project or researcher for this service?",
         options: [
@@ -66,11 +48,9 @@ const ROLES = {
     color: "#1F87A6",
     questions: [
       { key: "idc",
-        text: "Do you include the cost of this service in your Library Cost Pool for IDC calculations?" },
+        text: "Do you recover the costs for these library services in your indirect cost rate?" },
       { key: "costcenter",
-        text: "Do you have an existing cost center, or similar mechanism, that could be used to direct charge departments or grants for this service?" },
-      { key: "inconsistency",
-        text: "Check the box if direct charging for this service would not create inconsistency with similar costs elsewhere at the institution." },
+        text: "Do you have an existing cost center (or similar mechanism) that could be used to direct charge departments or grants for this service?" },
       { key: "threshold",
         text: "Do you have a threshold amount to consider moving a library service from the IDC to direct charging?",
         options: [

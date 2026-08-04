@@ -1147,7 +1147,9 @@
 
   function chip(value, label) {
     if (value === undefined) return `<span class="vchip vchip-empty" title="No answer yet">&middot;</span>`;
-    return `<span class="vchip" style="background:${VALUE_COLOR[value]}" title="${label}"></span>`;
+    if (value === 2) return `<span class="vchip-icon vchip-check" title="${label}">✓</span>`;
+    if (value === 1) return `<span class="vchip-icon vchip-question" title="${label}">?</span>`;
+    return `<span class="vchip-icon vchip-x" title="${label}">✕</span>`;
   }
 
   function learnMoreChip(itemId) {
@@ -1208,10 +1210,10 @@
 
       <div class="detail-legend">
         <div class="detail-legend-section">
-          <span class="detail-legend-title">Answer key</span>
-          <span class="detail-legend-item"><span class="vchip" style="background:#52733E"></span>Yes / good</span>
-          <span class="detail-legend-item"><span class="vchip" style="background:#C9941F"></span>Unsure / maybe</span>
-          <span class="detail-legend-item"><span class="vchip" style="background:#E6394A"></span>No / caution</span>
+          <span class="detail-legend-title">Key</span>
+          <span class="detail-legend-item"><span class="vchip-icon vchip-check">✓</span>Yes / good</span>
+          <span class="detail-legend-item"><span class="vchip-icon vchip-question">?</span>Unsure / maybe</span>
+          <span class="detail-legend-item"><span class="vchip-icon vchip-x">✕</span>No / caution</span>
           <span class="detail-legend-item"><span class="vchip vchip-empty">&middot;</span>Not yet answered</span>
         </div>
       </div>
@@ -1224,7 +1226,6 @@
                 <span class="detail-row-name-text">${r.item.name}</span>
                 ${r.notOffered ? ' <span class="tag tag-unknown">Not offered</span>' : ''}
               </div>
-              ${alignmentBar(r.score, r.libA, r.adminA, r.costA, r.notOffered, r.item.id)}
             </div>
             <p class="detail-row-desc">${r.item.desc}</p>
             <div class="detail-row-groups">
@@ -1234,9 +1235,10 @@
                   ? '<span class="detail-not-offered">Not offered</span>'
                   : LIBRARY_TRACKED_IDS.has(r.item.id)
                     ? `<div class="detail-q-list">
+                        <span class="detail-not-offered">Offered</span>
                         <div class="detail-q-item">${chip(r.libA.cost_tracking, "Library tracks cost or effort per project")}<span>Library already tracks cost or effort per project</span></div>
                       </div>`
-                    : '<span class="detail-not-offered">Offered</span>'}
+                    : '<span class="detail-not-offered">Offered — costs not easily tracked per individual researcher</span>'}
               </div>
               <div class="detail-group">
                 <span class="detail-group-label" style="color:${ROLES.admin.color}">Research Admin</span>

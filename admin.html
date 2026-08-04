@@ -6,6 +6,9 @@
 <title>Admin — Research Services Assessment</title>
 <link rel="stylesheet" href="css/style.css">
 <style>
+/* Ensure hidden attribute works even when CSS sets display */
+#gate[hidden], #admin-app[hidden], #outcomes-view[hidden] { display: none !important; }
+
 /* ---- Admin gate ---- */
 .admin-gate {
   min-height: 100vh; display: flex; align-items: center; justify-content: center;

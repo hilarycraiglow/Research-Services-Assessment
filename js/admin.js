@@ -459,8 +459,10 @@
   loadInstitutions();
   checkUrlKey();
 
-  const gate      = document.getElementById("gate");
-  const adminApp  = document.getElementById("admin-app");
+  const gate     = document.getElementById("gate");
+  const adminApp = document.getElementById("admin-app");
+  const pinInput = document.getElementById("pin-input");
+  const pinError = document.getElementById("pin-error");
 
   function showDashboard() {
     gate.hidden     = true;
@@ -468,24 +470,20 @@
     renderDashboard();
   }
 
+  function tryPin() {
+    if (pinInput.value === ADMIN_PIN) {
+      grantAuth();
+      showDashboard();
+    } else {
+      pinError.hidden = false;
+      pinInput.select();
+    }
+  }
+
   if (isAuthed()) {
     showDashboard();
   } else {
     gate.hidden = false;
-
-    const pinInput = document.getElementById("pin-input");
-    const pinError = document.getElementById("pin-error");
-
-    function tryPin() {
-      if (pinInput.value === ADMIN_PIN) {
-        grantAuth();
-        showDashboard();
-      } else {
-        pinError.hidden = false;
-        pinInput.select();
-      }
-    }
-
     document.getElementById("pin-btn").addEventListener("click", tryPin);
     pinInput.addEventListener("keydown", (e) => { if (e.key === "Enter") tryPin(); });
   }

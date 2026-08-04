@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Research Services Assessment</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+/* ---- Admin gate ---- */
+.admin-gate {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  background: var(--bg-alt, #f4f6f8);
+}
+.admin-gate-box {
+  background: #fff; border-radius: 14px; padding: 40px 48px; box-shadow: 0 4px 32px rgba(11,37,69,.12);
+  max-width: 400px; width: 100%; text-align: center;
+}
+.admin-gate-box h2 { margin: 0 0 6px; color: #0B2545; }
+.admin-gate-box p { color: #6b7a8d; font-size: 14px; margin: 0 0 24px; }
+.admin-gate-input {
+  width: 100%; box-sizing: border-box; padding: 10px 14px; border: 1.5px solid #d0d7df;
+  border-radius: 8px; font-size: 15px; margin-bottom: 12px; outline: none;
+}
+.admin-gate-input:focus { border-color: #0B2545; }
+.admin-gate-error { color: #E6394A; font-size: 13px; margin: 0 0 10px; }
+.admin-gate-logo { height: 32px; margin-bottom: 20px; }
+
+/* ---- Admin layout ---- */
+.admin-topbar-tag { font-size: 11px; font-weight: 700; letter-spacing: .1em; color: #fff; opacity: .7; }
+#admin-app { max-width: 1100px; margin: 0 auto; padding: 32px 24px 80px; }
+
+/* ---- Section headers ---- */
+.admin-section-title {
+  font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  color: #6b7a8d; margin: 0 0 14px;
+}
+
+/* ---- Import panel ---- */
+.import-panel {
+  background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px;
+  padding: 24px; margin-bottom: 36px;
+}
+.import-panel h2 { margin: 0 0 4px; font-size: 17px; color: #0B2545; }
+.import-panel > p { margin: 0 0 18px; font-size: 14px; color: #6b7a8d; }
+.import-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; margin-bottom: 12px; }
+.import-url-input {
+  flex: 1; min-width: 260px; padding: 9px 13px; border: 1.5px solid #d0d7df;
+  border-radius: 8px; font-size: 14px; outline: none;
+}
+.import-url-input:focus { border-color: #0B2545; }
+.import-name-input {
+  width: 220px; padding: 9px 13px; border: 1.5px solid #d0d7df;
+  border-radius: 8px; font-size: 14px; outline: none;
+}
+.import-name-input:focus { border-color: #0B2545; }
+.import-divider { text-align: center; color: #b0bac5; font-size: 13px; margin: 4px 0 12px; }
+.import-file-row { display: flex; align-items: center; gap: 12px; }
+.import-msg { font-size: 13px; margin-top: 8px; }
+.import-msg-ok { color: #52733E; }
+.import-msg-err { color: #E6394A; }
+
+/* ---- Institution grid ---- */
+.institution-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;
+}
+.inst-card {
+  background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 20px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.inst-card-name { font-size: 16px; font-weight: 700; color: #0B2545; margin: 0; }
+.inst-card-date { font-size: 12px; color: #9aa5b1; margin: 0; }
+.inst-progress-rows { display: flex; flex-direction: column; gap: 8px; }
+.inst-prog-row { display: flex; align-items: center; gap: 10px; }
+.inst-prog-label { font-size: 12px; font-weight: 600; color: #6b7a8d; width: 130px; flex-shrink: 0; }
+.inst-prog-track {
+  flex: 1; height: 7px; background: #e8edf2; border-radius: 4px; overflow: hidden;
+}
+.inst-prog-fill { height: 100%; border-radius: 4px; transition: width .3s; }
+.inst-prog-count { font-size: 11px; color: #9aa5b1; width: 44px; text-align: right; flex-shrink: 0; }
+.inst-card-actions { display: flex; gap: 8px; margin-top: 4px; }
+.inst-delete-btn { margin-left: auto; background: none; border: none; cursor: pointer; color: #b0bac5; font-size: 18px; padding: 0 4px; }
+.inst-delete-btn:hover { color: #E6394A; }
+
+/* ---- Outcomes view ---- */
+#outcomes-view { max-width: 1100px; margin: 0 auto; padding: 24px 24px 80px; }
+.outcomes-back-bar {
+  display: flex; align-items: center; gap: 14px; margin-bottom: 28px;
+  padding-bottom: 18px; border-bottom: 1.5px solid #e2e8f0;
+}
+.outcomes-inst-name { font-size: 22px; font-weight: 700; color: #0B2545; margin: 0; }
+.outcomes-inst-sub { font-size: 13px; color: #6b7a8d; margin: 2px 0 0; }
+
+/* ---- Print ---- */
+@media print {
+  .topbar, .outcomes-back-bar .btn, #admin-app, .admin-gate { display: none !important; }
+  #outcomes-view { padding: 0; }
+  .outcomes-back-bar { border: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <img class="brand-logo" src="assets/attain-partners-logo.png" alt="Attain Partners">
+      <span class="brand-divider"></span>
+      <span class="brand-text">Research Services</span>
+    </div>
+    <span class="eyebrow-tag">ADMIN</span>
+  </div>
+</header>
+
+<!-- PIN gate -->
+<div id="gate" class="admin-gate" hidden>
+  <div class="admin-gate-box">
+    <img src="assets/attain-partners-logo.png" alt="Attain Partners" class="admin-gate-logo">
+    <h2>Admin Dashboard</h2>
+    <p>Enter the admin PIN to access institution progress and outcomes.</p>
+    <input type="password" id="pin-input" class="admin-gate-input" placeholder="Admin PIN" autocomplete="current-password">
+    <p id="pin-error" class="admin-gate-error" hidden>Incorrect PIN. Please try again.</p>
+    <button class="btn btn-primary" id="pin-btn" style="width:100%">Continue</button>
+  </div>
+</div>
+
+<!-- Admin dashboard -->
+<div id="admin-app" hidden>
+  <div class="import-panel">
+    <h2>Import Institution Data</h2>
+    <p>Paste a share link generated from the assessment, or upload a JSON export. Data is merged automatically — you can import multiple links for the same institution as each team completes their section.</p>
+
+    <div class="import-row">
+      <input type="text" id="import-url" class="import-url-input" placeholder="Paste share link (…#share=…&institution=…)">
+      <input type="text" id="import-name" class="import-name-input" placeholder="Institution name (if not in link)">
+      <button class="btn btn-primary" id="import-url-btn">Import</button>
+    </div>
+
+    <div class="import-divider">— or upload a JSON export —</div>
+    <div class="import-file-row">
+      <input type="file" id="import-file" accept="application/json" hidden>
+      <input type="text" id="import-file-name" class="import-name-input" placeholder="Institution name (required)">
+      <button class="btn btn-secondary" id="import-file-btn">Choose JSON file…</button>
+    </div>
+    <p id="import-msg" class="import-msg" hidden></p>
+  </div>
+
+  <p class="admin-section-title" id="inst-count-label">No institutions imported yet</p>
+  <div class="institution-grid" id="institution-grid"></div>
+</div>
+
+<!-- Outcomes view (per institution) -->
+<div id="outcomes-view" hidden>
+  <div class="outcomes-back-bar">
+    <button class="btn btn-text" id="outcomes-back">&larr; All Institutions</button>
+    <div>
+      <p class="outcomes-inst-name" id="outcomes-inst-name"></p>
+      <p class="outcomes-inst-sub" id="outcomes-inst-sub"></p>
+    </div>
+    <button class="btn btn-cta" id="outcomes-print-btn" style="margin-left:auto">Export as PDF <span class="cta-arrow">&rarr;</span></button>
+  </div>
+
+  <div class="results-grid">
+    <div class="outcome-card" id="oc-expand">
+      <h3>Most Valuable Library Services</h3>
+      <p class="outcome-desc">Services the library offers that research administration recognizes as particularly valuable.</p>
+      <div class="outcome-body"></div>
+    </div>
+    <div class="outcome-card" id="oc-transparency">
+      <h3>Most Potential to Model Cost Transparency or Start Tracking Costs</h3>
+      <p class="outcome-desc">Service costs that the library can potentially isolate, research administrators value, and costing teams could potentially move from Indirect to direct costs.</p>
+      <div class="outcome-body"></div>
+    </div>
+  </div>
+  <div class="outcome-card outcome-card-wide" id="oc-threshold">
+    <h3>Finance/Costing Threshold</h3>
+    <p class="outcome-desc">Does the institution have a threshold for moving a library service from the IDC cost pool to direct charging?</p>
+    <div class="outcome-body"></div>
+  </div>
+  <div class="outcome-card outcome-card-wide" id="oc-learnmore">
+    <h3>Services Teams Want to Learn More About</h3>
+    <p class="outcome-desc">Services flagged by research administration or institutional finance/costing as services they'd like to learn more about.</p>
+    <div class="outcome-body"></div>
+  </div>
+  <div id="oc-detail"></div>
+</div>
+
+<script src="data/inventory.js"></script>
+<script src="data/roles.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

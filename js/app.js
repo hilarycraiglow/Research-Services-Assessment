@@ -4,6 +4,14 @@
   const STORAGE_KEY = "rsra-answers-v1";
   const INSTITUTION_KEY = "rsra-institution";
 
+  // Services for which the cost_tracking question is shown in the Library assessment
+  const LIBRARY_TRACKED_IDS = new Set([
+    "evidence-synthesis", "digitization", "data-management-planning", "data-repositories",
+    "computational-storage", "data-curation", "code-hosting", "code-training",
+    "processing-charges", "publishing-services", "communication-guidance",
+    "grant-compliance", "research-authorship", "data-security", "data-preservation"
+  ]);
+
   /** @type {{library: object, admin: object, costing: object}} */
   let DATA = loadData();
   let currentInstitution = localStorage.getItem(INSTITUTION_KEY) || "";
@@ -76,8 +84,11 @@
     let answered = 0;
     INVENTORY.forEach((item) => {
       const a = answers[item.id];
-      if (!a) return;
-      if (a.offers === false) { answered++; return; }
+      // Default (undefined or not explicitly offered) = not offered = answered
+      if (!a || a.offers !== true) { answered++; return; }
+      // Offered but no cost_tracking question for this service = answered
+      if (!LIBRARY_TRACKED_IDS.has(item.id)) { answered++; return; }
+      // Offered + tracked: only answered once cost_tracking is set
       if (a.cost_tracking !== undefined) answered++;
     });
     return { answered, total: INVENTORY.length };
@@ -201,7 +212,7 @@
     if (roleId === "library") {
       const hint = document.createElement("p");
       hint.className = "lib-offer-hint";
-      hint.textContent = "Each service below is checked by default. Uncheck the box if your library does not offer that service.";
+      hint.textContent = "Check the box next to each service your library offers. Services are unchecked by default.";
       container.appendChild(hint);
     }
     CATEGORIES.forEach((cat) => {
@@ -231,11 +242,12 @@
     return renderCostingItemCard(item);
   }
 
-  // Library card: offer toggle checkbox + 4 new questions
+  // Library card: offer toggle checkbox + optional cost_tracking question for tracked services
   function renderLibraryItemCard(item) {
     DATA.library[item.id] = DATA.library[item.id] || {};
     const answers = DATA.library[item.id];
-    const offered = answers.offers !== false;
+    const offered = answers.offers === true;
+    const isTracked = LIBRARY_TRACKED_IDS.has(item.id);
 
     const card = document.createElement("article");
     card.className = "item-card lib-item-card" + (offered ? "" : " not-offered");
@@ -273,39 +285,42 @@
     desc.textContent = item.desc;
     card.appendChild(desc);
 
-    // 4 questions
-    const role = ROLES.library;
-    const qWrap = document.createElement("div");
-    qWrap.className = "question-wrap";
+    // cost_tracking question only for tracked services
+    if (isTracked) {
+      const role = ROLES.library;
+      const qWrap = document.createElement("div");
+      qWrap.className = "question-wrap";
 
-    role.questions.forEach((q) => {
-      const qEl = document.createElement("div");
-      qEl.className = "question";
-      const qText = document.createElement("p");
-      qText.className = "question-text";
-      qText.textContent = q.text();
-      qEl.appendChild(qText);
+      role.questions.forEach((q) => {
+        const qEl = document.createElement("div");
+        qEl.className = "question";
+        const qText = document.createElement("p");
+        qText.className = "question-text";
+        qText.textContent = q.text();
+        qEl.appendChild(qText);
 
-      const optWrap = document.createElement("div");
-      optWrap.className = "options";
-      q.options.forEach((opt) => {
-        const optBtn = document.createElement("button");
-        optBtn.type = "button";
-        optBtn.className = `opt-btn val-${opt.value}`;
-        optBtn.textContent = opt.label;
-        if (answers[q.key] === opt.value) optBtn.classList.add("selected");
-        optBtn.addEventListener("click", () => {
-          answers[q.key] = opt.value;
-          saveData();
-          renderCategoryList("library");
+        const optWrap = document.createElement("div");
+        optWrap.className = "options";
+        q.options.forEach((opt) => {
+          const optBtn = document.createElement("button");
+          optBtn.type = "button";
+          optBtn.className = `opt-btn val-${opt.value}`;
+          optBtn.textContent = opt.label;
+          if (answers[q.key] === opt.value) optBtn.classList.add("selected");
+          optBtn.addEventListener("click", () => {
+            answers[q.key] = opt.value;
+            saveData();
+            renderCategoryList("library");
+          });
+          optWrap.appendChild(optBtn);
         });
-        optWrap.appendChild(optBtn);
+        qEl.appendChild(optWrap);
+        qWrap.appendChild(qEl);
       });
-      qEl.appendChild(optWrap);
-      qWrap.appendChild(qEl);
-    });
 
-    card.appendChild(qWrap);
+      card.appendChild(qWrap);
+    }
+
     return card;
   }
 
@@ -868,8 +883,9 @@
   // ---------- RESULTS / OUTCOMES ----------
   function libAnswers(itemId) {
     const a = (DATA.library || {})[itemId];
-    if (!a || a.offers === false) return null;
-    if (a.cost_tracking === undefined) return null;
+    if (!a || a.offers !== true) return null;
+    // For tracked services, only return answers once cost_tracking is set
+    if (LIBRARY_TRACKED_IDS.has(itemId) && a.cost_tracking === undefined) return null;
     return a;
   }
 
@@ -960,7 +976,7 @@
       const admin = adminAnswers(item.id);
       const libA = (DATA.library || {})[item.id];
       if (!admin) return false;
-      const libOffers = !libA ? null : libA.offers !== false;
+      const libOffers = !libA ? null : libA.offers === true;
       return libOffers === true && admin.value === 2;
     }) : [];
 
@@ -969,7 +985,7 @@
       const admin = adminAnswers(item.id);
       if (!admin) return null;
       const libA = (DATA.library || {})[item.id];
-      const libOffers = !libA ? null : libA.offers !== false;
+      const libOffers = !libA ? null : libA.offers === true;
       if (libOffers === true) return null;
       const adminScore = admin.value + admin.compliance + admin.chargeable;
       return { item, adminScore };
@@ -1046,7 +1062,7 @@
       const adm = (DATA.admin || {})[item.id] || {};
       const cst = (DATA.costing || {})[item.id] || {};
 
-      if (lib.offers === false) return;
+      if (lib.offers !== true) return;
 
       // Quick win: library tracks cost + admin values it + costing already has a cost center
       const libTracks = (lib.cost_tracking || 0) >= 1;
@@ -1102,7 +1118,7 @@
 
     const gaps = INVENTORY.filter((item) => {
       const lib = (DATA.library || {})[item.id] || {};
-      if (lib.offers === false) return false; // not offered — not a hidden investment
+      if (lib.offers !== true) return false; // not offered — not a hidden investment
       const libAnswered = ["project_specific","usage_scope","researcher_request","cost_tracking"].some((k) => lib[k] !== undefined);
       if (!libAnswered) return false;
 
@@ -1144,16 +1160,21 @@
   // Library: offers it AND tracks cost (cost_tracking >= 1)
   // Admin: marks it essential (value=2) AND open to charging (chargeable >= 1)
   // Costing: has it in IDC pool OR has a cost center, AND no inconsistency flagged
-  function alignmentScore(libA, adminA, costA, notOffered) {
+  function alignmentScore(libA, adminA, costA, notOffered, itemId) {
     let score = 0;
-    if (!notOffered && (libA.cost_tracking || 0) >= 1) score++;
+    if (!notOffered) {
+      // Non-tracked offered services count as library-ready (no question to answer)
+      const tracked = itemId && LIBRARY_TRACKED_IDS.has(itemId);
+      if (!tracked || (libA.cost_tracking || 0) >= 1) score++;
+    }
     if ((adminA.value || 0) === 2 && (adminA.chargeable || 0) >= 1) score++;
     if ((costA.idc || 0) === 2 || (costA.costcenter || 0) === 2) score++;
     return score;
   }
 
-  function alignmentBar(score, libA, adminA, costA, notOffered) {
-    const libReady = !notOffered && (libA.cost_tracking || 0) >= 1;
+  function alignmentBar(score, libA, adminA, costA, notOffered, itemId) {
+    const tracked = itemId && LIBRARY_TRACKED_IDS.has(itemId);
+    const libReady = !notOffered && (!tracked || (libA.cost_tracking || 0) >= 1);
     const adminReady = (adminA.value || 0) === 2 && (adminA.chargeable || 0) >= 1;
     const costReady = (costA.idc || 0) === 2 || (costA.costcenter || 0) === 2;
 
@@ -1176,8 +1197,8 @@
       const libA = (DATA.library || {})[item.id] || {};
       const adminA = adminAnswers(item.id) || {};
       const costA = costAnswers(item.id) || {};
-      const notOffered = libA.offers === false;
-      const score = alignmentScore(libA, adminA, costA, notOffered);
+      const notOffered = libA.offers !== true;
+      const score = alignmentScore(libA, adminA, costA, notOffered, item.id);
       return { item, libA, adminA, costA, notOffered, score };
     }).sort((a, b) => b.score - a.score); // highest alignment first
 
@@ -1203,7 +1224,7 @@
                 <span class="detail-row-name-text">${r.item.name}</span>
                 ${r.notOffered ? ' <span class="tag tag-unknown">Not offered</span>' : ''}
               </div>
-              ${alignmentBar(r.score, r.libA, r.adminA, r.costA, r.notOffered)}
+              ${alignmentBar(r.score, r.libA, r.adminA, r.costA, r.notOffered, r.item.id)}
             </div>
             <p class="detail-row-desc">${r.item.desc}</p>
             <div class="detail-row-groups">
@@ -1211,9 +1232,11 @@
                 <span class="detail-group-label" style="color:${ROLES.library.color}">Library</span>
                 ${r.notOffered
                   ? '<span class="detail-not-offered">Not offered</span>'
-                  : `<div class="detail-q-list">
-                      <div class="detail-q-item">${chip(r.libA.cost_tracking, "Library tracks cost or effort per project")}<span>Library already tracks cost or effort per project</span></div>
-                    </div>`}
+                  : LIBRARY_TRACKED_IDS.has(r.item.id)
+                    ? `<div class="detail-q-list">
+                        <div class="detail-q-item">${chip(r.libA.cost_tracking, "Library tracks cost or effort per project")}<span>Library already tracks cost or effort per project</span></div>
+                      </div>`
+                    : '<span class="detail-not-offered">Offered</span>'}
               </div>
               <div class="detail-group">
                 <span class="detail-group-label" style="color:${ROLES.admin.color}">Research Admin</span>

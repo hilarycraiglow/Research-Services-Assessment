@@ -184,6 +184,8 @@ body.modal-open { overflow: hidden; }
 .role-card[data-role="library"] .pill-badge { background: rgba(11,37,69,0.1); color: var(--navy); }
 .role-card[data-role="admin"] .pill-badge { background: rgba(82,115,62,0.14); color: var(--green); }
 .role-card[data-role="costing"] .pill-badge { background: rgba(31,135,166,0.14); color: var(--teal-dark); }
+.role-card-coming-soon { opacity: .72; }
+.role-card-coming-soon .coming-soon-text { font-style: italic; color: var(--text-muted); flex: 1; }
 
 /* ---------- buttons ---------- */
 .btn {

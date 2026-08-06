@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Research Services Collaborative Readiness Assessment</title>
-<link rel="stylesheet" href="css/style.css?v=13">
+<link rel="stylesheet" href="css/style.css?v=14">
 </head>
 <body>
 
@@ -46,8 +46,7 @@
         This initiative is based on the <a href="https://figshare.com/articles/online_resource/Research_Information_and_Data_Service_Inventory/32581626/1?file=65289315" target="_blank" rel="noopener" class="hero-link">Research Information and Data Service Inventory</a> (Craiglow &amp; LaFlamme, ARL).
       </p>
       <div class="cta-row">
-        <button class="btn btn-cta" data-scroll-to="role-grid">Start the assessment <span class="cta-arrow">&rarr;</span></button>
-        <button class="btn btn-outline-light" id="open-institution-modal-btn">Create a Unique Assessment URL for My Institution</button>
+        <button class="btn btn-cta" id="open-institution-modal-btn">Start or Find my Institution's Assessment <span class="cta-arrow">&rarr;</span></button>
       </div>
     </div>
   </div>
@@ -131,7 +130,7 @@
         <button class="btn btn-secondary" data-goto="results">See progress &amp; outcomes</button>
       </div>
       <div class="share-link-row">
-        <p class="share-link-label">Send this assessment to a counterpart (library, research admin, or costing) so they can fill out their section and combine results with yours:</p>
+        <p class="share-link-label">Send this link to a colleague on a <strong>different device</strong> — it carries all current answers so they can add their section. To share just the institution entry link (no data), use the "Start or Find my Institution's Assessment" button.</p>
         <div class="share-link-controls">
           <input type="text" id="share-link-input" readonly placeholder="Click &quot;Get link&quot; to generate a shareable link">
           <button class="btn btn-secondary" id="gen-link-btn">Get link</button>
@@ -189,10 +188,10 @@
 <div id="institution-modal" class="modal-overlay" hidden>
   <div class="modal-box">
     <div class="modal-header">
-      <h3 class="modal-title">Create a Unique Assessment URL</h3>
+      <h3 class="modal-title">Start or Find Your Institution's Assessment</h3>
       <button class="modal-close" id="modal-close-btn" aria-label="Close">&times;</button>
     </div>
-    <p class="modal-desc">Select your institution to generate a shareable URL. Anyone who opens the link will see your institution's name on every page of the assessment.</p>
+    <p class="modal-desc">Select your institution to open its unique assessment page. Any progress already saved on this device will be restored. Share the link with colleagues so they can open the same institution's assessment.</p>
     <label class="modal-label" for="institution-select">Institution</label>
     <select id="institution-select" class="modal-select">
       <option value="">— Select an institution —</option>
@@ -234,7 +233,7 @@
       <option>Yale University</option>
     </select>
     <div id="modal-url-section" hidden>
-      <label class="modal-label">Your unique assessment URL</label>
+      <label class="modal-label">Your institution's assessment link</label>
       <div class="modal-url-row">
         <input type="text" id="modal-url-input" class="modal-url-input" readonly>
         <button class="btn btn-secondary" id="modal-copy-btn">Copy</button>
@@ -243,7 +242,7 @@
       <p class="modal-copied" id="modal-copied" hidden>Copied to clipboard!</p>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-primary" id="modal-generate-btn">Generate URL</button>
+      <button class="btn btn-primary" id="modal-generate-btn">Go to Assessment</button>
       <button class="btn btn-text" id="modal-cancel-btn">Cancel</button>
     </div>
   </div>

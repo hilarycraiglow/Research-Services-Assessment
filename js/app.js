@@ -1,10 +1,6 @@
 (function () {
   "use strict";
 
-  const STORAGE_KEY = "rsra-answers-v1";
-  const INSTITUTION_KEY = "rsra-institution";
-
-  // Services for which the cost_tracking question is shown in the Library assessment
   const LIBRARY_TRACKED_IDS = new Set([
     "evidence-synthesis", "digitization", "data-management-planning", "data-repositories",
     "computational-storage", "data-curation", "code-hosting", "code-training",
@@ -12,25 +8,52 @@
     "grant-compliance", "research-authorship", "data-security", "data-preservation"
   ]);
 
+  // Institution comes from the URL query param (?institution=Name) — this is the stable entry point.
+  // Share links use the hash (#share=BASE64) to transfer data between devices.
+  let currentInstitution = new URLSearchParams(window.location.search).get("institution") || "";
+
+  function storageKey() {
+    return currentInstitution ? "rsra-answers-v1-" + currentInstitution : null;
+  }
+
+  function loadData() {
+    const key = storageKey();
+    if (!key) return { library: {}, admin: {}, costing: {} };
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    return { library: {}, admin: {}, costing: {} };
+  }
+
+  function saveData() {
+    const key = storageKey();
+    if (key) localStorage.setItem(key, JSON.stringify(DATA));
+  }
+
   /** @type {{library: object, admin: object, costing: object}} */
   let DATA = loadData();
-  let currentInstitution = localStorage.getItem(INSTITUTION_KEY) || "";
-  // (hash processing happens immediately after this block)
 
-  // Process URL hash: extract institution and share data before anything else
+  // Process URL hash: handle share links (data transfer between devices).
+  // Also accepts institution= in hash for backward compatibility with old links.
   (function processHash() {
     const hash = window.location.hash || "";
     if (!hash) return;
     const raw = hash.startsWith("#") ? hash.slice(1) : hash;
 
-    // Extract institution= param
-    const instMatch = raw.match(/(?:^|&)institution=([^&]+)/);
-    if (instMatch) {
-      currentInstitution = decodeURIComponent(instMatch[1].replace(/\+/g, " "));
-      localStorage.setItem(INSTITUTION_KEY, currentInstitution);
+    // Backward compat: institution in hash (old links) — only if not already set via query param
+    if (!currentInstitution) {
+      const instMatch = raw.match(/(?:^|&)institution=([^&]+)/);
+      if (instMatch) {
+        currentInstitution = decodeURIComponent(instMatch[1].replace(/\+/g, " "));
+        DATA = loadData();
+        // Redirect to clean query-param URL
+        const clean = window.location.pathname + "?institution=" + encodeURIComponent(currentInstitution);
+        history.replaceState(null, "", clean);
+      }
     }
 
-    // Extract share= param (base64 may contain + and =, so find from "share=" to next &institution)
+    // Extract share= data and merge into current institution's data
     const shareMatch = raw.match(/(?:^|&)share=(.+?)(?:&institution=|$)/);
     if (shareMatch) {
       try {
@@ -42,30 +65,23 @@
       } catch (e) {}
     }
 
-    history.replaceState(null, "", window.location.pathname + window.location.search);
+    // Remove hash, keep query params (institution stays in URL)
+    if (!raw.startsWith("institution=") || currentInstitution) {
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
   })();
 
-  // Legacy: handle old-style #share= without institution param
-  function mergeSharedLinkData() { /* handled above */ }
-
-  function loadData() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) return JSON.parse(raw);
-    } catch (e) {}
-    return { library: {}, admin: {}, costing: {} };
-  }
-
-  function saveData() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA));
-  }
-
-  // ---------- SHARE LINK ----------
+  // ---------- SHARE LINK (data transfer — use when sharing across devices) ----------
   function buildShareLink() {
     const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(DATA))));
-    let url = window.location.href.split("#")[0] + `#share=${encoded}`;
-    if (currentInstitution) url += `&institution=${encodeURIComponent(currentInstitution)}`;
-    return url;
+    const base = window.location.href.split("#")[0];
+    return base + "#share=" + encoded;
+  }
+
+  // ---------- INSTITUTION URL (stable entry point) ----------
+  function buildInstitutionUrl(name) {
+    const base = window.location.href.split("?")[0].split("#")[0];
+    return base + "?institution=" + encodeURIComponent(name || currentInstitution);
   }
 
   function categoryItems(catId) {
@@ -793,12 +809,11 @@
   document.getElementById("modal-generate-btn").addEventListener("click", () => {
     const selected = institutionSelect.value;
     if (!selected) { institutionSelect.focus(); return; }
-    currentInstitution = selected;
-    localStorage.setItem(INSTITUTION_KEY, currentInstitution);
-    updateInstitutionBanner();
-    const url = window.location.href.split("#")[0] + "#institution=" + encodeURIComponent(currentInstitution);
+    const url = buildInstitutionUrl(selected);
     modalUrlInput.value = url;
     modalUrlSection.hidden = false;
+    // Navigate to the institution URL — loads existing data for this institution
+    window.location.href = url;
   });
 
   document.getElementById("modal-copy-btn").addEventListener("click", async () => {
@@ -812,11 +827,12 @@
   document.getElementById("modal-email-btn").addEventListener("click", (e) => {
     e.preventDefault();
     const url = modalUrlInput.value;
-    const inst = currentInstitution;
-    const subject = encodeURIComponent(`Research Services Readiness Assessment — ${inst}`);
+    const inst = institutionSelect.value || currentInstitution;
+    const subject = encodeURIComponent(`Research Information and Data Services Assessment — ${inst}`);
     const body = encodeURIComponent(
-      `Hi,\n\nI've created a Research Services Collaborative Readiness Assessment for ${inst}. ` +
-      `Use this link to open the assessment with our institution name pre-loaded:\n\n${url}\n\nThanks!`
+      `Hi,\n\nI'm working on a Research Information and Data Services Collaborative Readiness Assessment for ${inst}. ` +
+      `Use this link to open our institution's assessment:\n\n${url}\n\n` +
+      `After completing your portion, use the "Get link" button in the "What's next" section to generate a data link that merges your answers with any already submitted.\n\nThanks!`
     );
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
   });
@@ -837,10 +853,11 @@
     e.preventDefault();
     const link = shareLinkInput.value || buildShareLink();
     shareLinkInput.value = link;
-    const subject = encodeURIComponent("Research Services Readiness Assessment — your input needed");
+    const instLabel = currentInstitution ? ` — ${currentInstitution}` : "";
+    const subject = encodeURIComponent(`Research Information and Data Services Assessment${instLabel} — your input needed`);
     const body = encodeURIComponent(
-      `Hi,\n\nWe're working through the Research Services Collaborative Readiness Assessment. ` +
-      `Click this link to load what's been answered so far and add your team's answers:\n\n${link}\n\nThanks!`
+      `Hi,\n\nI've completed my portion of the Research Information and Data Services Collaborative Readiness Assessment${instLabel}. ` +
+      `Click this link to load all answers so far and add your team's section:\n\n${link}\n\nThanks!`
     );
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
   });

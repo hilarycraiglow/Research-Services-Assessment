@@ -919,7 +919,7 @@
     const thresholdText = thresholdData.threshold_text || "";
     const thresholdLabels = { 2: "Yes", 1: "Depends", 0: "No" };
     if (thresholdValue === undefined) {
-      el.innerHTML = `<p class="empty-note">Not yet answered — complete the Institutional Finance/Costing assessment to add this.</p>`;
+      el.innerHTML = `<p class="empty-note">Not yet answered — complete the Finance/Costing assessment to add this.</p>`;
       return;
     }
     const displayText = thresholdText ? ` &mdash; $${thresholdText}` : "";
@@ -932,7 +932,7 @@
     const costDone = costingCompletion().answered > 0;
 
     if (!libDone || !costDone) {
-      el.innerHTML = `<p class="empty-note">Needs answers from both <strong>Library</strong> and <strong>Institutional Finance/Costing</strong> to calculate.</p>`;
+      el.innerHTML = `<p class="empty-note">Needs answers from both <strong>Library</strong> and <strong>Finance/Costing</strong> to calculate.</p>`;
       return;
     }
 
@@ -1033,7 +1033,7 @@
       return { item, tags };
     }).filter(Boolean);
     if (!items.length) {
-      el.innerHTML = `<p class="empty-note">No services selected yet — Research Administration and Institutional Finance/Costing can each flag services for follow-up in the optional section at the end of their assessment.</p>`;
+      el.innerHTML = `<p class="empty-note">No services selected yet — Research Administration and Finance/Costing can each flag services for follow-up in the optional section at the end of their assessment.</p>`;
       return;
     }
     const tagColors = { "Research Admin": ROLES.admin.color, "Costing": ROLES.costing.color };
@@ -1113,7 +1113,7 @@
     const costDone = costingCompletion().answered > 0;
 
     if (!libDone || (!adminDone && !costDone)) {
-      el.innerHTML = `<p class="empty-note">Needs Library answers plus at least one of Research Administration or Institutional Finance/Costing.</p>`;
+      el.innerHTML = `<p class="empty-note">Needs Library answers plus at least one of Research Administration or Finance/Costing.</p>`;
       return;
     }
 

@@ -43,8 +43,8 @@ const ROLES = {
   },
   costing: {
     id: "costing",
-    label: "Institutional Finance/Costing",
-    subtitle: "Institutional research finance & cost accountants",
+    label: "Finance/Costing",
+    subtitle: "Research finance & cost accounting teams",
     color: "#1F87A6",
     questions: [
       { key: "idc",

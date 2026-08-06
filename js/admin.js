@@ -356,65 +356,78 @@
     return new Date(ts).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
   }
 
-  function renderDashboard() {
-    const grid  = document.getElementById("institution-grid");
-    const label = document.getElementById("inst-count-label");
-    const names = Object.keys(institutions).sort();
+  function progRow(labelText, completion, color) {
+    const pct = Math.round((completion.answered / completion.total) * 100);
+    return `<div class="inst-prog-row">
+      <span class="inst-prog-label">${labelText}</span>
+      <span class="inst-prog-track"><span class="inst-prog-fill" style="width:${pct}%;background:${color}"></span></span>
+      <span class="inst-prog-count">${completion.answered}/${completion.total}</span>
+    </div>`;
+  }
 
-    if (!names.length) {
-      label.textContent = "No institutions imported yet";
-      grid.innerHTML = `<p style="color:#9aa5b1;font-size:14px">Import a share link above to get started.</p>`;
-      return;
-    }
+  function renderStatusPanel(name) {
+    const panel = document.getElementById("inst-status-panel");
+    if (!name || !institutions[name]) { panel.hidden = true; return; }
 
-    label.textContent = `${names.length} institution${names.length !== 1 ? "s" : ""}`;
-    grid.innerHTML = "";
+    const data = institutions[name];
+    const libC = libraryCompletion(data);
+    const admC = adminCompletion(data);
+    const cstC = costingCompletion(data);
 
-    names.forEach((name) => {
-      const data = institutions[name];
-      const libC  = libraryCompletion(data);
-      const admC  = adminCompletion(data);
-      const cstC  = costingCompletion(data);
-
-      const progRow = (label, completion, color) => {
-        const pct = Math.round((completion.answered / completion.total) * 100);
-        return `<div class="inst-prog-row">
-          <span class="inst-prog-label">${label}</span>
-          <span class="inst-prog-track"><span class="inst-prog-fill" style="width:${pct}%;background:${color}"></span></span>
-          <span class="inst-prog-count">${completion.answered}/${completion.total}</span>
-        </div>`;
-      };
-
-      const card = document.createElement("div");
-      card.className = "inst-card";
-      card.innerHTML = `
-        <div style="display:flex;align-items:flex-start;justify-content:space-between">
+    panel.hidden = false;
+    panel.innerHTML = `
+      <div class="inst-status-card">
+        <div class="inst-status-header">
           <div>
             <p class="inst-card-name">${name}</p>
             <p class="inst-card-date">Last updated: ${formatDate(data.importedAt)}</p>
           </div>
-          <button class="inst-delete-btn" data-delete="${name}" title="Remove institution">&times;</button>
         </div>
         <div class="inst-progress-rows">
           ${progRow("Library", libC, ROLES.library.color)}
           ${progRow("Research Admin", admC, ROLES.admin.color)}
           ${progRow("Finance/Costing", cstC, ROLES.costing.color)}
         </div>
-        <div class="inst-card-actions">
-          <button class="btn btn-primary" data-view="${name}">View Outcomes &rarr;</button>
-        </div>`;
+        <div class="inst-status-actions">
+          <button class="btn btn-primary" id="status-view-btn">View Outcomes &rarr;</button>
+          <button class="btn btn-secondary" id="status-clear-btn">Clear Assessment</button>
+        </div>
+      </div>`;
 
-      card.querySelector("[data-view]").addEventListener("click", () => openOutcomes(name));
-      card.querySelector("[data-delete]").addEventListener("click", () => {
-        if (confirm(`Remove all data for "${name}"? This cannot be undone.`)) {
-          delete institutions[name];
-          saveInstitutions();
-          renderDashboard();
-        }
-      });
-
-      grid.appendChild(card);
+    panel.querySelector("#status-view-btn").addEventListener("click", () => openOutcomes(name));
+    panel.querySelector("#status-clear-btn").addEventListener("click", () => {
+      if (confirm(`Clear all assessment data for "${name}"? This cannot be undone.`)) {
+        institutions[name] = { importedAt: Date.now() };
+        saveInstitutions();
+        // Also clear per-institution localStorage key (same device)
+        try { localStorage.removeItem("rsra-answers-v1-" + name); } catch (e) {}
+        renderStatusPanel(name);
+      }
     });
+  }
+
+  function renderDashboard() {
+    const select = document.getElementById("inst-select");
+    const label  = document.getElementById("inst-count-label");
+    const names  = Object.keys(institutions).sort();
+
+    // Preserve current selection if still valid
+    const prev = select.value;
+
+    // Rebuild options
+    select.innerHTML = `<option value="">— Select an institution —</option>` +
+      names.map((n) => `<option value="${n}">${n}</option>`).join("");
+
+    label.textContent = names.length
+      ? `${names.length} institution${names.length !== 1 ? "s" : ""}`
+      : "Institutions";
+
+    if (prev && institutions[prev]) {
+      select.value = prev;
+      renderStatusPanel(prev);
+    } else {
+      renderStatusPanel(null);
+    }
   }
 
   // ---- Outcomes view ----
@@ -487,6 +500,11 @@
     document.getElementById("pin-btn").addEventListener("click", tryPin);
     pinInput.addEventListener("keydown", (e) => { if (e.key === "Enter") tryPin(); });
   }
+
+  // Institution dropdown
+  document.getElementById("inst-select").addEventListener("change", (e) => {
+    renderStatusPanel(e.target.value);
+  });
 
   // Import: share link
   document.getElementById("import-url-btn").addEventListener("click", () => {

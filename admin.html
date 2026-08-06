@@ -84,6 +84,23 @@
 .inst-delete-btn { margin-left: auto; background: none; border: none; cursor: pointer; color: #b0bac5; font-size: 18px; padding: 0 4px; }
 .inst-delete-btn:hover { color: #E6394A; }
 
+/* ---- Institution selector ---- */
+.inst-select-dropdown {
+  width: 100%; max-width: 480px; padding: 10px 14px; border: 1.5px solid #d0d7df;
+  border-radius: 8px; font-size: 15px; outline: none; background: #fff;
+}
+.inst-select-dropdown:focus { border-color: #0B2545; }
+.inst-selector-row { margin-bottom: 20px; }
+
+/* ---- Institution status card ---- */
+.inst-status-card {
+  background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px;
+  padding: 24px; max-width: 520px; display: flex; flex-direction: column; gap: 16px;
+  margin-top: 4px;
+}
+.inst-status-header { display: flex; align-items: flex-start; justify-content: space-between; }
+.inst-status-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
 /* ---- Outcomes view ---- */
 #outcomes-view { max-width: 1100px; margin: 0 auto; padding: 24px 24px 80px; }
 .outcomes-back-bar {
@@ -147,8 +164,13 @@
     <p id="import-msg" class="import-msg" hidden></p>
   </div>
 
-  <p class="admin-section-title" id="inst-count-label">No institutions imported yet</p>
-  <div class="institution-grid" id="institution-grid"></div>
+  <div class="inst-selector-row">
+    <label class="admin-section-title" for="inst-select" style="display:block;margin-bottom:8px" id="inst-count-label">Institutions</label>
+    <select id="inst-select" class="inst-select-dropdown">
+      <option value="">— Select an institution —</option>
+    </select>
+  </div>
+  <div id="inst-status-panel" hidden></div>
 </div>
 
 <!-- Outcomes view (per institution) -->

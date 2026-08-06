@@ -185,7 +185,7 @@ body.modal-open { overflow: hidden; }
 .role-card h2 { margin: 4px 0 0; font-size: 18px; color: var(--navy); }
 .role-card-sub { margin: 0; font-size: 13px; color: var(--text-muted); font-weight: 600; }
 .role-card p { font-size: 14px; color: var(--text-muted); flex: 1; }
-.role-card .btn-primary { display: block; width: 100%; text-align: center; margin-top: auto; }
+.role-card .btn-primary { display: flex; width: 100%; text-align: center; margin-top: auto; min-height: 54px; align-items: center; justify-content: center; }
 .role-card[data-role="library"] .pill-badge { background: rgba(11,37,69,0.1); color: var(--navy); }
 .role-card[data-role="admin"] .pill-badge { background: rgba(82,115,62,0.14); color: var(--green); }
 .role-card[data-role="costing"] .pill-badge { background: rgba(31,135,166,0.14); color: var(--teal-dark); }

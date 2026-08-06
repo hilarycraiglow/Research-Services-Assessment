@@ -178,6 +178,7 @@
             </div>
           </div>`;
       }).join("") +
+      `<div class="progress-card progress-card-empty"></div>` +
     `</div>`;
 
     // re-bind start buttons since innerHTML replaced them

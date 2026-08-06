@@ -185,7 +185,7 @@ body.modal-open { overflow: hidden; }
 .role-card h2 { margin: 4px 0 0; font-size: 18px; color: var(--navy); }
 .role-card-sub { margin: 0; font-size: 13px; color: var(--text-muted); font-weight: 600; }
 .role-card p { font-size: 14px; color: var(--text-muted); flex: 1; }
-.role-card .btn-primary { align-self: stretch; margin-top: auto; }
+.role-card .btn-primary { width: 100%; margin-top: auto; }
 .role-card[data-role="library"] .pill-badge { background: rgba(11,37,69,0.1); color: var(--navy); }
 .role-card[data-role="admin"] .pill-badge { background: rgba(82,115,62,0.14); color: var(--green); }
 .role-card[data-role="costing"] .pill-badge { background: rgba(31,135,166,0.14); color: var(--teal-dark); }
@@ -215,11 +215,12 @@ body.modal-open { overflow: hidden; }
 /* ---------- progress summary (home) ---------- */
 .progress-summary { margin-bottom: 32px; }
 .progress-summary-title { margin: 0 0 14px; font-size: 15px; font-weight: 700; color: var(--navy); }
-.progress-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.progress-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
 .progress-card {
   background: var(--card-bg); border: 1px solid var(--border); border-top: 3px solid var(--border);
   border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow);
 }
+.progress-card-empty { background: none; border: none; box-shadow: none; }
 .progress-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
 .progress-card-role { margin: 0 0 2px; font-size: 13px; font-weight: 700; }
 .progress-card-sub { margin: 0; font-size: 11.5px; color: var(--text-muted); line-height: 1.35; }

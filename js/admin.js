@@ -133,7 +133,8 @@
   // ---- Answer helpers ----
   function libAnswers(data, itemId) {
     const a = ((data && data.library) || {})[itemId];
-    if (!a || a.offers !== true) return null;
+    if (a && a.offers === false) return null;
+    if (!a) return null;
     if (LIBRARY_TRACKED_IDS.has(itemId) && a.cost_tracking === undefined) return null;
     return a;
   }
@@ -152,17 +153,17 @@
   // ---- Chip icons ----
   const VALUE_COLOR = { 2: "#52733E", 1: "#C9941F", 0: "#E6394A" };
 
-  function chip(value, label) {
-    if (value === undefined) return `<span class="vchip vchip-empty" title="No answer yet">&middot;</span>`;
-    if (value === 2) return `<span class="vchip-icon vchip-check" title="${label}">✓</span>`;
-    if (value === 1) return `<span class="vchip-icon vchip-question" title="${label}">?</span>`;
-    return `<span class="vchip-icon vchip-x" title="${label}">✕</span>`;
+  // Library: ✓ only when tracking costs; blank otherwise
+  function chipLib(value) {
+    if (value === 2) return `<span class="vchip-icon vchip-check" title="Already tracking costs">✓</span>`;
+    return `<span class="vchip vchip-empty">&middot;</span>`;
   }
 
-  function learnMoreChip(data, itemId) {
-    const a = ((data && data.admin) || {})[itemId];
-    if (!a || !a.learnmore) return `<span class="vchip vchip-empty" title="Not flagged">&middot;</span>`;
-    return `<span class="vchip-icon vchip-check" title="Wants to learn more">✓</span>`;
+  // Admin/Costing: ✓ when selected (2), ✕ when not selected (0/1), · when unanswered (undefined)
+  function chipBool(value, label) {
+    if (value === undefined) return `<span class="vchip vchip-empty" title="No answer yet">&middot;</span>`;
+    if (value === 2) return `<span class="vchip-icon vchip-check" title="${label}">✓</span>`;
+    return `<span class="vchip-icon vchip-x" title="${label}">✕</span>`;
   }
 
   // ---- Alignment ----
@@ -316,7 +317,7 @@
       const libA   = ((data && data.library) || {})[item.id] || {};
       const adminA = adminAnswers(data, item.id) || {};
       const costA  = costAnswers(data, item.id) || {};
-      const notOffered = libA.offers !== true;
+      const notOffered = libA.offers === false;
       const score = alignmentScore(libA, adminA, costA, notOffered, item.id);
       return { item, libA, adminA, costA, notOffered, score };
     }).sort((a, b) => b.score - a.score);
@@ -328,9 +329,8 @@
       <div class="detail-legend">
         <div class="detail-legend-section">
           <span class="detail-legend-title">Key</span>
-          <span class="detail-legend-item"><span class="vchip-icon vchip-check">✓</span>Yes / good</span>
-          <span class="detail-legend-item"><span class="vchip-icon vchip-question">?</span>Unsure / maybe</span>
-          <span class="detail-legend-item"><span class="vchip-icon vchip-x">✕</span>No / caution</span>
+          <span class="detail-legend-item"><span class="vchip-icon vchip-check">✓</span>Yes / selected</span>
+          <span class="detail-legend-item"><span class="vchip-icon vchip-x">✕</span>No / not selected</span>
           <span class="detail-legend-item"><span class="vchip vchip-empty">&middot;</span>Not yet answered</span>
         </div>
       </div>
@@ -353,25 +353,25 @@
                   : LIBRARY_TRACKED_IDS.has(r.item.id)
                     ? `<div class="detail-q-list">
                         <span class="detail-not-offered">Offered</span>
-                        <div class="detail-q-item">${chip(r.libA.cost_tracking, "Library tracks cost or effort per project")}<span>Library already tracks cost or effort per project</span></div>
+                        <div class="detail-q-item">${chipLib(r.libA.cost_tracking)}<span>Library already tracks cost or effort per project</span></div>
                       </div>`
                     : '<span class="detail-not-offered">Offered — costs not easily tracked per individual researcher</span>'}
               </div>
               <div class="detail-group">
                 <span class="detail-group-label" style="color:${ROLES.admin.color}">Research Admin</span>
                 <div class="detail-q-list">
-                  <div class="detail-q-item">${chip(r.adminA.compliance, "Helps satisfy grant compliance")}<span>Helps satisfy grant compliance requirements</span></div>
-                  <div class="detail-q-item">${chip(r.adminA.value, "Essential to research strategy")}<span>Essential to the institution's research strategy</span></div>
-                  <div class="detail-q-item">${chip(r.adminA.chargeable, "Open to direct charging")}<span>Open to direct charging grants to keep it sustainable</span></div>
-                  <div class="detail-q-item">${learnMoreChip(data, r.item.id)}<span>Flagged: wants to learn more from the library</span></div>
+                  <div class="detail-q-item">${chipBool(r.adminA.compliance, "Helps satisfy grant compliance")}<span>Helps satisfy grant compliance requirements</span></div>
+                  <div class="detail-q-item">${chipBool(r.adminA.value, "Essential to research strategy")}<span>Essential to the institution's research strategy</span></div>
+                  <div class="detail-q-item">${chipBool(r.adminA.chargeable, "Open to direct charging")}<span>Open to direct charging grants to keep it sustainable</span></div>
+                  ${((data && data.admin) || {})[r.item.id] && ((data.admin)[r.item.id].learnmore) ? `<div class="detail-q-item"><span class="vchip-icon vchip-check" title="Wants to learn more">✓</span><span>Flagged: wants to learn more from the library</span></div>` : ""}
                 </div>
               </div>
               <div class="detail-group">
                 <span class="detail-group-label" style="color:${ROLES.costing.color}">Finance/Costing</span>
                 <div class="detail-q-list">
-                  <div class="detail-q-item">${chip(r.costA.idc, "Cost recovered in indirect cost rate")}<span>Costs recovered in indirect cost rate</span></div>
-                  <div class="detail-q-item">${chip(r.costA.costcenter, "Cost center available")}<span>Existing cost center available to direct charge departments or grants</span></div>
-                  <div class="detail-q-item">${r.costA.learnmore ? `<span class="vchip-icon vchip-check" title="Wants to learn more">✓</span>` : `<span class="vchip vchip-empty">&middot;</span>`}<span>Flagged: wants to learn more from the library</span></div>
+                  <div class="detail-q-item">${chipBool(r.costA.idc, "Cost recovered in indirect cost rate")}<span>Costs recovered in indirect cost rate</span></div>
+                  <div class="detail-q-item">${chipBool(r.costA.costcenter, "Cost center available")}<span>Existing cost center available to direct charge departments or grants</span></div>
+                  ${r.costA.learnmore ? `<div class="detail-q-item"><span class="vchip-icon vchip-check" title="Wants to learn more">✓</span><span>Flagged: wants to learn more from the library</span></div>` : ""}
                 </div>
               </div>
             </div>

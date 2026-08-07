@@ -2,10 +2,48 @@
   "use strict";
 
   // ---- Configuration ----
-  // Change ADMIN_PIN to set your admin password
   const ADMIN_PIN = "attain2025";
   const ADMIN_KEY = "rsra-admin-institutions-v1";
   const AUTH_KEY  = "rsra-admin-authed";
+
+  const ALL_INSTITUTIONS = [
+    "Test",
+    "Arizona State University",
+    "Brown University",
+    "Cold Spring Harbor Laboratory",
+    "Colorado State University",
+    "Cornell University",
+    "Duke University",
+    "George Mason University",
+    "Johns Hopkins University",
+    "Massachusetts Institute of Technology",
+    "New York University",
+    "Texas State University",
+    "University at Buffalo",
+    "University of Alabama",
+    "University of Arizona",
+    "University of California Riverside",
+    "University of California, Davis",
+    "University of California, Los Angeles",
+    "University of California, Santa Barbara",
+    "University of Connecticut",
+    "University of Delaware",
+    "University of Florida",
+    "University of Hawaiʻi",
+    "University of Iowa",
+    "University of Kentucky",
+    "University of Minnesota",
+    "University of Nebraska-Lincoln",
+    "University of Nevada, Las Vegas",
+    "University of Rochester",
+    "University of South Carolina",
+    "University of Utah",
+    "University of Wisconsin-Madison",
+    "Van Andel Institute",
+    "Virginia Tech",
+    "Washington University in St. Louis",
+    "Yale University"
+  ];
 
   // Services that show the cost_tracking question in the Library assessment
   const LIBRARY_TRACKED_IDS = new Set([
@@ -367,7 +405,16 @@
 
   function renderStatusPanel(name) {
     const panel = document.getElementById("inst-status-panel");
-    if (!name || !institutions[name]) { panel.hidden = true; return; }
+    if (!name) { panel.hidden = true; return; }
+
+    if (!institutions[name]) {
+      panel.hidden = false;
+      panel.innerHTML = `<div class="inst-status-card">
+        <p class="inst-card-name">${name}</p>
+        <p class="inst-card-date" style="margin-top:8px">No assessment started yet.</p>
+      </div>`;
+      return;
+    }
 
     const data = institutions[name];
     const libC = libraryCompletion(data);
@@ -407,22 +454,23 @@
   }
 
   function renderDashboard() {
-    const select = document.getElementById("inst-select");
-    const label  = document.getElementById("inst-count-label");
-    const names  = Object.keys(institutions).sort();
+    const select  = document.getElementById("inst-select");
+    const label   = document.getElementById("inst-count-label");
+    const started = Object.keys(institutions).length;
 
-    // Preserve current selection if still valid
     const prev = select.value;
 
-    // Rebuild options
     select.innerHTML = `<option value="">— Select an institution —</option>` +
-      names.map((n) => `<option value="${n}">${n}</option>`).join("");
+      ALL_INSTITUTIONS.map((n) => {
+        const hasData = !!institutions[n];
+        return `<option value="${n}"${hasData ? ' class="inst-has-data"' : ""}>${n}${hasData ? " ●" : ""}</option>`;
+      }).join("");
 
-    label.textContent = names.length
-      ? `${names.length} institution${names.length !== 1 ? "s" : ""}`
-      : "Institutions";
+    label.textContent = started
+      ? `${started} of ${ALL_INSTITUTIONS.length} institutions have started`
+      : `${ALL_INSTITUTIONS.length} institutions`;
 
-    if (prev && institutions[prev]) {
+    if (prev) {
       select.value = prev;
       renderStatusPanel(prev);
     } else {

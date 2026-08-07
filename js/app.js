@@ -100,12 +100,12 @@
     let answered = 0;
     INVENTORY.forEach((item) => {
       const a = answers[item.id];
-      // Default (undefined or not explicitly offered) = not offered = answered
-      if (!a || a.offers !== true) { answered++; return; }
-      // Offered but no cost_tracking question for this service = answered
+      // Explicitly unchecked = not offered = answered (skip)
+      if (a && a.offers === false) { answered++; return; }
+      // Offered (default or explicit) non-tracked = answered
       if (!LIBRARY_TRACKED_IDS.has(item.id)) { answered++; return; }
       // Offered + tracked: only answered once cost_tracking is set
-      if (a.cost_tracking !== undefined) answered++;
+      if (a && a.cost_tracking !== undefined) answered++;
     });
     return { answered, total: INVENTORY.length };
   }
@@ -229,7 +229,7 @@
     if (roleId === "library") {
       const hint = document.createElement("p");
       hint.className = "lib-offer-hint";
-      hint.textContent = "Check the box next to each service your library offers. Services are unchecked by default.";
+      hint.textContent = "All services are checked by default. Uncheck any services your library does not offer.";
       container.appendChild(hint);
     }
     CATEGORIES.forEach((cat) => {
@@ -263,7 +263,12 @@
   function renderLibraryItemCard(item) {
     DATA.library[item.id] = DATA.library[item.id] || {};
     const answers = DATA.library[item.id];
-    const offered = answers.offers === true;
+    // Default to offered=true; only false when explicitly unchecked
+    if (answers.offers === undefined) {
+      answers.offers = true;
+      saveData();
+    }
+    const offered = answers.offers !== false;
     const isTracked = LIBRARY_TRACKED_IDS.has(item.id);
 
     const card = document.createElement("article");
@@ -901,7 +906,10 @@
   // ---------- RESULTS / OUTCOMES ----------
   function libAnswers(itemId) {
     const a = (DATA.library || {})[itemId];
-    if (!a || a.offers !== true) return null;
+    // Explicitly not offered → no answer
+    if (a && a.offers === false) return null;
+    // If no record at all, treat as offered (default) but nothing to report yet
+    if (!a) return null;
     // For tracked services, only return answers once cost_tracking is set
     if (LIBRARY_TRACKED_IDS.has(itemId) && a.cost_tracking === undefined) return null;
     return a;
@@ -994,7 +1002,7 @@
       const admin = adminAnswers(item.id);
       const libA = (DATA.library || {})[item.id];
       if (!admin) return false;
-      const libOffers = !libA ? null : libA.offers === true;
+      const libOffers = !libA ? true : libA.offers !== false;
       return libOffers === true && admin.value === 2;
     }) : [];
 
@@ -1003,7 +1011,7 @@
       const admin = adminAnswers(item.id);
       if (!admin) return null;
       const libA = (DATA.library || {})[item.id];
-      const libOffers = !libA ? null : libA.offers === true;
+      const libOffers = !libA ? true : libA.offers !== false;
       if (libOffers === true) return null;
       const adminScore = admin.value + admin.compliance + admin.chargeable;
       return { item, adminScore };
@@ -1173,7 +1181,7 @@
   function learnMoreChip(itemId) {
     const a = (DATA.admin || {})[itemId];
     if (!a || !a.learnmore) return `<span class="vchip vchip-empty" title="Not flagged">&middot;</span>`;
-    return `<span class="vchip" style="background:#52733E" title="Wants to learn more"></span>`;
+    return `<span class="vchip-icon vchip-check" title="Wants to learn more">✓</span>`;
   }
 
   // Alignment score: how many of the three teams signal this service is ready for cost discussion.
@@ -1217,7 +1225,7 @@
       const libA = (DATA.library || {})[item.id] || {};
       const adminA = adminAnswers(item.id) || {};
       const costA = costAnswers(item.id) || {};
-      const notOffered = libA.offers !== true;
+      const notOffered = libA.offers === false;
       const score = alignmentScore(libA, adminA, costA, notOffered, item.id);
       return { item, libA, adminA, costA, notOffered, score };
     }).sort((a, b) => b.score - a.score); // highest alignment first
@@ -1272,7 +1280,7 @@
                 <div class="detail-q-list">
                   <div class="detail-q-item">${chip(r.costA.idc, "Cost recovered in indirect cost rate")}<span>Costs recovered in indirect cost rate</span></div>
                   <div class="detail-q-item">${chip(r.costA.costcenter, "Cost center available")}<span>Existing cost center available to direct charge departments or grants</span></div>
-                  <div class="detail-q-item">${r.costA.learnmore ? `<span class="vchip" style="background:${ROLES.costing.color}" title="Wants to learn more"></span>` : `<span class="vchip vchip-empty">&middot;</span>`}<span>Flagged: wants to learn more from the library</span></div>
+                  <div class="detail-q-item">${r.costA.learnmore ? `<span class="vchip-icon vchip-check" title="Wants to learn more">✓</span>` : `<span class="vchip vchip-empty">&middot;</span>`}<span>Flagged: wants to learn more from the library</span></div>
                 </div>
               </div>
             </div>

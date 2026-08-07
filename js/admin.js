@@ -111,9 +111,10 @@
     let answered = 0;
     INVENTORY.forEach((item) => {
       const a = answers[item.id];
-      if (!a || a.offers !== true) { answered++; return; }
-      if (!LIBRARY_TRACKED_IDS.has(item.id)) { answered++; return; }
-      if (a.cost_tracking !== undefined) answered++;
+      if (!a) return; // no entry = not yet answered
+      if (a.offers === false) { answered++; return; } // explicitly not offered
+      if (!LIBRARY_TRACKED_IDS.has(item.id)) { answered++; return; } // offered, no tracking question
+      if (a.cost_tracking !== undefined) answered++; // offered + tracked + answered
     });
     return { answered, total: INVENTORY.length };
   }

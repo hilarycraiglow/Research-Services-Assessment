@@ -793,9 +793,14 @@
   const modalUrlInput = document.getElementById("modal-url-input");
 
   document.getElementById("open-institution-modal-btn").addEventListener("click", () => {
-    // Pre-select current institution if one is set
-    if (currentInstitution) institutionSelect.value = currentInstitution;
-    modalUrlSection.hidden = true;
+    if (currentInstitution) {
+      institutionSelect.value = currentInstitution;
+      modalUrlInput.value = buildInstitutionUrl(currentInstitution);
+      modalUrlSection.hidden = false;
+    } else {
+      institutionSelect.value = "";
+      modalUrlSection.hidden = true;
+    }
     institutionModal.hidden = false;
     document.body.classList.add("modal-open");
   });
@@ -809,14 +814,19 @@
   document.getElementById("modal-cancel-btn").addEventListener("click", closeModal);
   institutionModal.addEventListener("click", (e) => { if (e.target === institutionModal) closeModal(); });
 
+  // When institution is selected, show the URL so the user can copy it before proceeding
+  institutionSelect.addEventListener("change", () => {
+    const selected = institutionSelect.value;
+    if (!selected) { modalUrlSection.hidden = true; return; }
+    modalUrlInput.value = buildInstitutionUrl(selected);
+    modalUrlSection.hidden = false;
+  });
+
+  // "Go to Assessment" navigates — URL is already shown from the change handler
   document.getElementById("modal-generate-btn").addEventListener("click", () => {
     const selected = institutionSelect.value;
     if (!selected) { institutionSelect.focus(); return; }
-    const url = buildInstitutionUrl(selected);
-    modalUrlInput.value = url;
-    modalUrlSection.hidden = false;
-    // Navigate to the institution URL — loads existing data for this institution
-    window.location.href = url;
+    window.location.href = buildInstitutionUrl(selected);
   });
 
   document.getElementById("modal-copy-btn").addEventListener("click", async () => {
@@ -1169,9 +1179,10 @@
 
   const VALUE_COLOR = { 2: "#52733E", 1: "#C9941F", 0: "#E6394A" };
 
-  // Library: ✓ only when tracking costs; blank otherwise
+  // Library: ✓ for Yes or Somewhat; blank for No; dot for not yet answered
   function chipLib(value) {
-    if (value === 2) return `<span class="vchip-icon vchip-check" title="Already tracking costs">✓</span>`;
+    if (value === 2 || value === 1) return `<span class="vchip-icon vchip-check" title="Tracks costs">✓</span>`;
+    if (value === 0) return ``;
     return `<span class="vchip vchip-empty">&middot;</span>`;
   }
 

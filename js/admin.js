@@ -154,9 +154,10 @@
   // ---- Chip icons ----
   const VALUE_COLOR = { 2: "#52733E", 1: "#C9941F", 0: "#E6394A" };
 
-  // Library: ✓ only when tracking costs; blank otherwise
+  // Library: ✓ for Yes or Somewhat; blank for No; dot for not yet answered
   function chipLib(value) {
-    if (value === 2) return `<span class="vchip-icon vchip-check" title="Already tracking costs">✓</span>`;
+    if (value === 2 || value === 1) return `<span class="vchip-icon vchip-check" title="Tracks costs">✓</span>`;
+    if (value === 0) return ``;
     return `<span class="vchip vchip-empty">&middot;</span>`;
   }
 

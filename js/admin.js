@@ -61,6 +61,30 @@
       const raw = localStorage.getItem(ADMIN_KEY);
       if (raw) institutions = JSON.parse(raw);
     } catch (e) {}
+
+    // Also pull in any assessment data stored directly on this device
+    // (rsra-answers-v1-{name}) so the admin sees local completions automatically.
+    ALL_INSTITUTIONS.forEach((name) => {
+      try {
+        const key = "rsra-answers-v1-" + name;
+        const raw = localStorage.getItem(key);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        const hasContent = ["library", "admin", "costing"].some(
+          (r) => data[r] && Object.keys(data[r]).length > 0
+        );
+        if (!hasContent) return;
+        // Merge: imported data takes precedence per role if it exists, otherwise use local
+        const existing = institutions[name] || {};
+        ["library", "admin", "costing"].forEach((r) => {
+          if (!existing[r] || Object.keys(existing[r]).length === 0) {
+            existing[r] = data[r] || {};
+          }
+        });
+        if (!existing.importedAt) existing.importedAt = Date.now();
+        institutions[name] = existing;
+      } catch (e) {}
+    });
   }
 
   function saveInstitutions() {

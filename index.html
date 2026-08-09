@@ -3,77 +3,110 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Research Services Cost Transparency Assessment</title>
-<link rel="stylesheet" href="css/style.css">
+<title>Research Services Collaborative Readiness Assessment</title>
+<link rel="stylesheet" href="css/style.css?v=14">
 </head>
 <body>
+
+<!-- Print-only header: logo, contact, institution -->
+<div class="print-header" id="print-header">
+  <img src="assets/attain-partners-logo.png" alt="Attain Partners" class="print-logo">
+  <div class="print-header-right">
+    <span id="print-institution-name"></span>
+    <a href="https://attainpartners.com/contact/" class="print-contact">attainpartners.com/contact</a>
+  </div>
+</div>
+
 <header class="topbar">
   <div class="topbar-inner">
     <div class="brand">
-      <span class="brand-mark"></span>
-      <span class="brand-text">Research Services Collaborative Readiness Assessment</span>
+      <img class="brand-logo" src="assets/attain-partners-logo.png" alt="Attain Partners">
+      <span class="brand-divider"></span>
+      <span class="brand-text">Research Information and Data Services</span>
     </div>
-    <nav class="topnav" id="topnav">
-      <button class="nav-link active" data-view="home">Home</button>
-      <button class="nav-link" data-view="assessment">Assessment</button>
-      <button class="nav-link" data-view="results">Outcomes</button>
-    </nav>
+    <span class="eyebrow-tag">ASSESSMENT</span>
   </div>
 </header>
+
+<!-- HERO (per-view) -->
+<section class="hero-banner" id="hero-home">
+  <div class="hero-banner-inner">
+    <div class="hero-copy">
+      <h1>Research Information and Data Services<br>Collaborative Readiness Assessment</h1>
+      <p class="hero-desc">
+        This assessment collaboratively identifies the research information and data services that support sponsored research across an institution. By building shared awareness, institutions can scale the services with the greatest impact and ensure they remain financially viable and sustainable.
+      </p>
+      <p class="hero-desc">
+        A shared understanding strengthens compliance and promotes long-term financial stability by ensuring investments in research information and data services are accurately recognized, appropriately accounted for, and sustainably resourced.
+      </p>
+      <p class="hero-desc">
+        The results are a conversation starter, not a directive: a shared basis for the library, research administration, and costing/finance to create cost transparency and align on indirect cost pool structure and grant charging decisions.
+      </p>
+      <p class="hero-desc">
+        This initiative is based on the <a href="https://figshare.com/articles/online_resource/Research_Information_and_Data_Service_Inventory/32581626/1?file=65289315" target="_blank" rel="noopener" class="hero-link">Research Information and Data Service Inventory</a> (Craiglow &amp; LaFlamme, ARL).
+      </p>
+      <div class="cta-row">
+        <button class="btn btn-cta" id="open-institution-modal-btn">Start or Find My Institution's Assessment <span class="cta-arrow">&rarr;</span></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<nav class="tabnav-bar" id="topnav">
+  <button class="tab-link active" data-view="home"><span class="tab-num">1</span>Home</button>
+  <button class="tab-link" data-view="assessment"><span class="tab-num">2</span>Assessment</button>
+  <button class="tab-link" data-view="results"><span class="tab-num">3</span>Outcomes</button>
+</nav>
+
+<div id="institution-banner" class="institution-banner" hidden></div>
 
 <main id="app">
 
   <!-- HOME / ROLE PICKER -->
   <section class="view" id="view-home">
-    <div class="hero">
-      <h1>Is your library, research office, and costing team ready to talk about cost?</h1>
-      <p class="hero-sub">
-        Built on the <strong>Research Information and Data Service Inventory</strong> (Craiglow &amp; LaFlamme, ARL),
-        this assessment asks three audiences the same 22 services, in their own language, then compares the
-        answers to surface where library investments are ready for cost transparency&nbsp;&mdash; and where they
-        should expand.
-      </p>
-    </div>
 
-    <div class="role-grid">
+    <p class="role-instructions">Any member of an institution can start the assessment. After all three perspectives are complete, see your outcomes report.</p>
+
+    <div class="role-grid" id="role-grid">
       <article class="role-card" data-role="library">
         <div class="role-card-bar" style="background:#0B2545"></div>
+        <span class="pill-badge pill-navy">LIBRARY</span>
         <h2>Library</h2>
         <p class="role-card-sub">Library leadership &amp; service managers</p>
-        <p>For each service: do you offer it, can you isolate its cost, and can you show that cost per project or researcher?</p>
+        <p>Inventory your research and data services, and discover which services are most valued by research administrators, and where to consider cost transparency or grant charging.</p>
         <button class="btn btn-primary" data-start="library">Start as Library</button>
       </article>
       <article class="role-card" data-role="admin">
         <div class="role-card-bar" style="background:#52733E"></div>
+        <span class="pill-badge pill-green">RESEARCH ADMIN</span>
         <h2>Research Administration</h2>
         <p class="role-card-sub">Sponsored programs &amp; research administrators</p>
-        <p>For each service: is it valuable to your research strategy, does it support grant compliance, and could you charge a grant for it?</p>
+        <p>Discover the library services most valuable to your research strategy, confirm partnerships in grant compliance, and help assess opportunities for direct grant charging for library services.</p>
         <button class="btn btn-primary" data-start="admin">Start as Research Administration</button>
       </article>
       <article class="role-card" data-role="costing">
         <div class="role-card-bar" style="background:#1F87A6"></div>
-        <h2>University Costing</h2>
-        <p class="role-card-sub">Institutional costing &amp; cost accounting teams</p>
-        <p>For each service: do you have a cost center for it, is it already in F&amp;A recovery, and would you move it to direct charging?</p>
-        <button class="btn btn-primary" data-start="costing">Start as University Costing</button>
+        <span class="pill-badge pill-teal">FINANCE/COSTING</span>
+        <h2>Finance/Costing</h2>
+        <p class="role-card-sub">Research finance &amp; cost accounting teams</p>
+        <p>Document that all library services are recognized in your IDC calculations and discover which library costs are worth tracking as potential direct charges.</p>
+        <button class="btn btn-primary" data-start="costing">Start as Finance/Costing</button>
+      </article>
+      <article class="role-card role-card-coming-soon" data-role="it">
+        <div class="role-card-bar" style="background:#7B5EA7"></div>
+        <span class="pill-badge" style="background:#7B5EA7;color:#fff">INFORMATION TECHNOLOGY</span>
+        <h2>Information Technology</h2>
+        <p class="role-card-sub">IT leadership &amp; computing services</p>
+        <p class="coming-soon-text">Coming soon.</p>
       </article>
     </div>
 
     <div class="progress-summary" id="progress-summary"></div>
 
-    <div class="share-box">
-      <h3>Combining results across teams</h3>
-      <p>Each stakeholder fills out their section on their own device. Use <strong>Export</strong> to save your
-      answers as a file, and ask the other two teams to send you theirs. <strong>Import</strong> each file to see
-      combined Outcomes.</p>
-      <div class="share-actions">
-        <button class="btn btn-secondary" id="export-btn">Export my answers</button>
-        <label class="btn btn-secondary file-btn">
-          Import answers
-          <input type="file" id="import-input" accept="application/json" hidden>
-        </label>
-        <button class="btn btn-text" id="reset-btn">Clear all local data</button>
-      </div>
+    <div id="share-box" hidden>
+      <input type="file" id="import-input" accept="application/json" hidden>
+      <button id="export-btn" hidden></button>
+      <button id="reset-btn" hidden></button>
     </div>
   </section>
 
@@ -85,33 +118,135 @@
         <h2 id="assessment-role-title">Assessment</h2>
         <p id="assessment-role-sub"></p>
       </div>
-      <div class="progress-pill" id="assessment-progress">0 / 22</div>
+      <div class="progress-pill" id="assessment-progress" style="display:none">0 / 20</div>
     </div>
     <div id="category-list"></div>
+
+    <div class="whatsnext-box" id="whatsnext-box">
+      <h3>What's next?</h3>
+      <p>You can keep going, check the combined outcomes so far, or bring in your counterpart on the other two teams.</p>
+      <div class="whatsnext-actions">
+        <button class="btn btn-secondary" data-goto="home">Continue / start another role</button>
+        <button class="btn btn-secondary" data-goto="results">See progress &amp; outcomes</button>
+      </div>
+      <div class="share-link-row">
+        <p class="share-link-label">Send this link to a colleague on a <strong>different device</strong> — it carries all current answers so they can add their section. To share just the institution entry link (no data), use the "Start or Find My Institution's Assessment" button.</p>
+        <div class="share-link-controls">
+          <input type="text" id="share-link-input" readonly placeholder="Click &quot;Get link&quot; to generate a shareable link">
+          <button class="btn btn-secondary" id="gen-link-btn">Get link</button>
+          <button class="btn btn-secondary" id="copy-link-btn">Copy</button>
+          <a class="btn btn-text" id="email-link-btn" href="#">Email link</a>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- RESULTS -->
   <section class="view" id="view-results" hidden>
+    <p class="eyebrow">YOUR RESULTS</p>
     <div class="results-header">
-      <h2>Outcomes</h2>
-      <p>Outcomes update automatically as more roles complete the assessment or are imported.</p>
+      <h2>Outcomes at a glance</h2>
+      <p>Outcomes update automatically as more roles complete the assessment.</p>
     </div>
     <div class="results-grid">
-      <div class="outcome-card" id="outcome-transparency">
-        <h3>Most potential to model cost transparency</h3>
-        <p class="outcome-desc">Services the library can already isolate and demonstrate the cost of, where costing teams are open to direct charging.</p>
+      <div class="outcome-card" id="outcome-expand">
+        <h3>Most Valuable Library Services</h3>
+        <p class="outcome-desc">Services the library offers that research administration recognizes as particularly valuable.</p>
         <div class="outcome-body"></div>
       </div>
-      <div class="outcome-card" id="outcome-expand">
-        <h3>Most valuable to expand or start</h3>
-        <p class="outcome-desc">Services research administrators value most, that the library does not yet fully offer.</p>
+      <div class="outcome-card" id="outcome-transparency">
+        <h3>Most Potential to Model Cost Transparency or Track Costs</h3>
+        <p class="outcome-desc">Service costs that the library can potentially isolate, research administrators value, and costing teams could potentially move from Indirect to direct costs.</p>
         <div class="outcome-body"></div>
       </div>
     </div>
+    <div class="outcome-card outcome-card-wide" id="outcome-threshold">
+      <h3>Service Center Threshold</h3>
+      <p class="outcome-desc">Does the institution have a threshold for moving a library service from the IDC cost pool to direct charging?</p>
+      <div class="outcome-body"></div>
+    </div>
+    <div class="outcome-card outcome-card-wide" id="outcome-learnmore">
+      <h3>Services Teams Want to Learn More About</h3>
+      <p class="outcome-desc">Services flagged by research administration or institutional finance/costing as services they'd like to learn more about.</p>
+      <div class="outcome-body"></div>
+    </div>
     <div class="results-detail" id="results-detail"></div>
+
+    <div class="cta-banner">
+      <div class="cta-banner-copy">
+        <p class="cta-banner-kicker">NEXT STEP</p>
+        <h3>Bring these outcomes to your next cost-recovery conversation</h3>
+        <p>Export this view to use as a conversation starter with your unit and university partners.</p>
+      </div>
+      <button class="btn btn-cta" id="export-btn-results">Export as PDF <span class="cta-arrow">&rarr;</span></button>
+    </div>
   </section>
 
 </main>
+
+<!-- Institution URL modal -->
+<div id="institution-modal" class="modal-overlay" hidden>
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 class="modal-title">Start or Find Your Institution's Assessment</h3>
+      <button class="modal-close" id="modal-close-btn" aria-label="Close">&times;</button>
+    </div>
+    <p class="modal-desc">Select your institution to open its unique assessment page. Any progress already saved on this device will be restored. Share the link with colleagues so they can open the same institution's assessment.</p>
+    <label class="modal-label" for="institution-select">Institution</label>
+    <select id="institution-select" class="modal-select">
+      <option value="">— Select an institution —</option>
+      <option>Test</option>
+      <option>Arizona State University</option>
+      <option>Brown University</option>
+      <option>Cold Spring Harbor Laboratory</option>
+      <option>Colorado State University</option>
+      <option>Cornell University</option>
+      <option>Duke University</option>
+      <option>George Mason University</option>
+      <option>Johns Hopkins University</option>
+      <option>Massachusetts Institute of Technology</option>
+      <option>New York University</option>
+      <option>Texas State University</option>
+      <option>University at Buffalo</option>
+      <option>University of Alabama</option>
+      <option>University of Arizona</option>
+      <option>University of California Riverside</option>
+      <option>University of California, Davis</option>
+      <option>University of California, Los Angeles</option>
+      <option>University of California, Santa Barbara</option>
+      <option>University of Connecticut</option>
+      <option>University of Delaware</option>
+      <option>University of Florida</option>
+      <option>University of Hawai&#x02BB;i</option>
+      <option>University of Iowa</option>
+      <option>University of Kentucky</option>
+      <option>University of Minnesota</option>
+      <option>University of Nebraska-Lincoln</option>
+      <option>University of Nevada, Las Vegas</option>
+      <option>University of Rochester</option>
+      <option>University of South Carolina</option>
+      <option>University of Utah</option>
+      <option>University of Wisconsin-Madison</option>
+      <option>Van Andel Institute</option>
+      <option>Virginia Tech</option>
+      <option>Washington University in St. Louis</option>
+      <option>Yale University</option>
+    </select>
+    <div id="modal-url-section" hidden>
+      <label class="modal-label">Your institution's assessment link</label>
+      <div class="modal-url-row">
+        <input type="text" id="modal-url-input" class="modal-url-input" readonly>
+        <button class="btn btn-secondary" id="modal-copy-btn">Copy</button>
+        <a class="btn btn-text" id="modal-email-btn" href="#">Email</a>
+      </div>
+      <p class="modal-copied" id="modal-copied" hidden>Copied to clipboard!</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="modal-generate-btn">Go to Assessment</button>
+      <button class="btn btn-text" id="modal-cancel-btn">Cancel</button>
+    </div>
+  </div>
+</div>
 
 <script src="data/inventory.js"></script>
 <script src="data/roles.js"></script>

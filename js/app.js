@@ -376,7 +376,16 @@
     DATA.costing = DATA.costing || {};
     const container = document.getElementById("category-list");
     container.innerHTML = "";
-    INVENTORY.forEach((item) => { DATA.costing[item.id] = DATA.costing[item.id] || {}; });
+    INVENTORY.forEach((item) => {
+      DATA.costing[item.id] = DATA.costing[item.id] || {};
+      // Default per-service question keys to 0 so unchecked items show ✕ in outcomes
+      ROLES.costing.questions.forEach((q) => {
+        if (!q.hasTextInput && DATA.costing[item.id][q.key] === undefined) {
+          DATA.costing[item.id][q.key] = 0;
+        }
+      });
+    });
+    saveData();
 
     ROLES.costing.questions.forEach((q, qi) => {
       const section = document.createElement("section");
@@ -603,7 +612,14 @@
     DATA.admin = DATA.admin || {};
     const container = document.getElementById("category-list");
     container.innerHTML = "";
-    INVENTORY.forEach((item) => { DATA.admin[item.id] = DATA.admin[item.id] || {}; });
+    INVENTORY.forEach((item) => {
+      DATA.admin[item.id] = DATA.admin[item.id] || {};
+      // Default all question keys to 0 so unchecked items show ✕ (not ·) in outcomes
+      ADMIN_QUESTIONS.forEach((q) => {
+        if (DATA.admin[item.id][q.key] === undefined) DATA.admin[item.id][q.key] = 0;
+      });
+    });
+    saveData();
 
     ADMIN_QUESTIONS.forEach((q, qi) => {
       const section = document.createElement("section");
